@@ -1,4 +1,117 @@
 package main;
+import manager.DatabaseManager;
+import model.User;
+import ui.LoginPanel;
+import ui.MainMenu;
+import ui.RegisterPanel;
 
-public class GameMain {
+import javax.swing.*;
+import java.awt.*;
+
+public class GameMain extends JFrame {
+
+
+    private CardLayout cardLayout;
+    private JPanel mainPanel;
+    private DatabaseManager db;
+    private User currentUser;
+    private MainMenu mainMenu;
+    private LoginPanel loginPanel;
+    private RegisterPanel registerPanel;
+
+    private GameMain(){
+
+        db=new DatabaseManager();
+        if(!db.connect()){
+            JOptionPane.showMessageDialog(null,"Database connection failed!");
+            System.exit(0);
+        }
+
+        db.createTables();
+
+        initializeFrame();
+        initializePanels();
+        setVisible(true);
+
+    }
+
+    private void initializeFrame() {
+
+        setTitle("Chicken Invaders");
+        setSize(1000,700);
+        setLocationRelativeTo(null);//پنجره وسط صفجه باز شه
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setResizable(false);//کاربر نتونه سایز پنجره رو تغییر بده
+        cardLayout = new CardLayout();
+        mainPanel = new JPanel(cardLayout);
+        add(mainPanel);
+    }
+
+
+    //ساخت تمام صفجه های برنامه
+    private void initializePanels() {
+
+        mainMenu = new MainMenu(this);
+        loginPanel = new LoginPanel(this,db);
+        registerPanel = new RegisterPanel(this,db);
+        mainPanel.add(mainMenu,"MENU");
+        mainPanel.add(loginPanel,"LOGIN");
+        mainPanel.add(registerPanel,"REGISTER");
+        cardLayout.show(mainPanel,"MENU");//اولین صفحه
+    }
+
+    //جابه جایی بین صفحات
+    public void showMainMenu() {
+        cardLayout.show(mainPanel,"MENU");
+    }
+
+    public void showLoginPanel() {
+        cardLayout.show(mainPanel,"LOGIN");
+    }
+
+    public void showRegisterPanel() {
+        cardLayout.show(mainPanel,"REGISTER");
+    }
+
+    public void showHighScorePanel() {
+        cardLayout.show(mainPanel, "HIGHSCORE");
+    }
+
+    public void showSettingsPanel() {
+        cardLayout.show(mainPanel, "SETTINGS");
+    }
+
+    public void showHowToPlayPanel() {
+        cardLayout.show(mainPanel, "HOWTOPLAY");
+    }
+
+    public void showGamePanel() {
+        cardLayout.show(mainPanel, "GAME");
+    }
+
+
+    //کاربر فعلی
+    public User getCurrentUser() {
+        return currentUser;
+    }
+
+    public void setCurrentUser(User currentUser) {
+        this.currentUser = currentUser;
+    }
+
+    public DatabaseManager getDb() {
+        return db;
+    }
+
+
+    //نقطه شروع برنامه
+    public static void main(String[] args) {
+
+        SwingUtilities.invokeLater(() -> {
+            new GameMain();
+        });
+
+    }
+
+
 }
