@@ -90,7 +90,6 @@ public class MainMenu extends BackgroundPanel{
                     frame.showLoginPanel();
                 }
                 else {
-                    JOptionPane.showMessageDialog(MainMenu.this, "Start Game");
                     frame.showGamePanel();
                 }
             }

@@ -1,6 +1,7 @@
 package main;
 import manager.DatabaseManager;
 import model.User;
+import ui.GamePanel;
 import ui.LoginPanel;
 import ui.MainMenu;
 import ui.RegisterPanel;
@@ -18,6 +19,8 @@ public class GameMain extends JFrame {
     private MainMenu mainMenu;
     private LoginPanel loginPanel;
     private RegisterPanel registerPanel;
+
+    private GamePanel gamePanel;
 
     private GameMain(){
 
@@ -45,6 +48,10 @@ public class GameMain extends JFrame {
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
         add(mainPanel);
+
+        gamePanel = new GamePanel();
+        mainPanel.add(gamePanel,"GAME");
+
     }
 
 
