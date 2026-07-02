@@ -11,6 +11,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class GamePanel extends JPanel {
 
@@ -24,6 +25,8 @@ public class GamePanel extends JPanel {
     private boolean rightPressed;
     private boolean upPressed;
     private boolean downPressed;
+
+    private long lastShotTime;
 
     public GamePanel() {
 
@@ -83,6 +86,18 @@ public class GamePanel extends JPanel {
         if(downPressed)
             plane.moveDown();
 
+        Iterator<Bullet> iterator = bullets.iterator();
+
+        while(iterator.hasNext()){
+
+            Bullet bullet = iterator.next();
+            bullet.move();
+            if(bullet.isOutOfScreen()){
+                iterator.remove();
+            }
+
+        }
+
         for (Enemy enemy : enemies) {
             enemy.move();
         }
@@ -119,6 +134,10 @@ public class GamePanel extends JPanel {
                         downPressed = true;
                         break;
 
+                    case KeyEvent.VK_SPACE://چون یه عمل لحظه ایه و نه پیوسته مثل بقیه کلید ها
+                        shoot();
+                        break;
+
                 }
             }
 
@@ -150,5 +169,34 @@ public class GamePanel extends JPanel {
             }
         });
     }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+
+        super.paintComponent(g);
+
+        plane.draw(g);
+        for (Bullet bullet : bullets) {
+            bullet.draw(g);
+        }
+        for (Enemy enemy : enemies) {
+            enemy.draw(g);
+        }
+
+    }
+
+    private void shoot() {
+
+        long currentTime = System.currentTimeMillis();
+
+        if(currentTime-lastShotTime<plane.getFireRate())
+            return;
+
+        bullets.add( new Bullet ( plane.getX()+plane.getWidth()/2-5, plane.getY()));
+
+        lastShotTime=currentTime;
+
+    }
+
 
 }
