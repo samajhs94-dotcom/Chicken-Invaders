@@ -94,6 +94,7 @@ public class GameMain extends JFrame {
 
     public void showGamePanel() {
         cardLayout.show(mainPanel, "GAME");
+        gamePanel.requestFocusInWindow();
     }
 
 

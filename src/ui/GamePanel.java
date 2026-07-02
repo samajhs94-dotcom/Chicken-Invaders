@@ -8,6 +8,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 
 public class GamePanel extends JPanel {
@@ -17,6 +19,11 @@ public class GamePanel extends JPanel {
     private ArrayList<Enemy> enemies;
 
     private Timer gameTimer;
+
+    private boolean leftPressed;
+    private boolean rightPressed;
+    private boolean upPressed;
+    private boolean downPressed;
 
     public GamePanel() {
 
@@ -30,6 +37,9 @@ public class GamePanel extends JPanel {
         createEnemies();
 
         initializeTimer();
+
+        initializeKeyboard();
+
     }
 
     //ایجاد دشمن های اولیه- فعلا NormalEnemy
@@ -61,10 +71,84 @@ public class GamePanel extends JPanel {
 
     private void updateGame() {
 
+        if(leftPressed)
+            plane.moveLeft();
+
+        if(rightPressed)
+            plane.moveRight();
+
+        if(upPressed)
+            plane.moveUp();
+
+        if(downPressed)
+            plane.moveDown();
+
         for (Enemy enemy : enemies) {
             enemy.move();
         }
 
+    }
+
+    // کنترل صفحه کلید
+    private void initializeKeyboard() {
+
+        addKeyListener(new KeyAdapter() {
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+
+                switch (e.getKeyCode()) {
+
+                    case KeyEvent.VK_LEFT:
+                    case KeyEvent.VK_A:
+                        leftPressed = true;
+                        break;
+
+                    case KeyEvent.VK_RIGHT:
+                    case KeyEvent.VK_D:
+                        rightPressed = true;
+                        break;
+
+                    case KeyEvent.VK_UP:
+                    case KeyEvent.VK_W:
+                        upPressed = true;
+                        break;
+
+                    case KeyEvent.VK_DOWN:
+                    case KeyEvent.VK_S:
+                        downPressed = true;
+                        break;
+
+                }
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+
+                switch (e.getKeyCode()) {
+
+                    case KeyEvent.VK_LEFT:
+                    case KeyEvent.VK_A:
+                        leftPressed = false;
+                        break;
+
+                    case KeyEvent.VK_RIGHT:
+                    case KeyEvent.VK_D:
+                        rightPressed = false;
+                        break;
+
+                    case KeyEvent.VK_UP:
+                    case KeyEvent.VK_W:
+                        upPressed = false;
+                        break;
+
+                    case KeyEvent.VK_DOWN:
+                    case KeyEvent.VK_S:
+                        downPressed = false;
+                        break;
+                }
+            }
+        });
     }
 
 }
