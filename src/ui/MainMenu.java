@@ -19,7 +19,7 @@ public class MainMenu extends BackgroundPanel{
     private JLabel messageLabel;
 
     public MainMenu(GameMain frame){
-        super("src/resources/images/welcomeBackground.png");
+        super("src/resources/images/FirstBackground.png");
         this.frame=frame;
         initializeComponents();
         addListeners();

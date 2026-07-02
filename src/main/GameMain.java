@@ -11,6 +11,8 @@ import java.awt.*;
 
 public class GameMain extends JFrame {
 
+    public static final int WINDOW_WIDTH = 800;
+    public static final int WINDOW_HEIGHT = 600;
 
     private CardLayout cardLayout;
     private JPanel mainPanel;
@@ -41,7 +43,7 @@ public class GameMain extends JFrame {
     private void initializeFrame() {
 
         setTitle("Chicken Invaders");
-        setSize(1000,700);
+        setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         setLocationRelativeTo(null);//پنجره وسط صفجه باز شه
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);//کاربر نتونه سایز پنجره رو تغییر بده
@@ -95,6 +97,7 @@ public class GameMain extends JFrame {
     public void showGamePanel() {
         cardLayout.show(mainPanel, "GAME");
         gamePanel.requestFocusInWindow();
+        gamePanel.setCurrentUser(currentUser);
     }
 
 

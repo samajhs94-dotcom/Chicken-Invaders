@@ -2,8 +2,11 @@ package ui;
 
 import enemy.Enemy;
 import enemy.NormalEnemy;
+import main.GameMain;
 import model.Bullet;
 import model.Plane;
+import model.User;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -13,7 +16,7 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class GamePanel extends JPanel {
+public class GamePanel extends BackgroundPanel {
 
     private Plane plane;
     private ArrayList<Bullet> bullets;
@@ -28,12 +31,24 @@ public class GamePanel extends JPanel {
 
     private long lastShotTime;
 
+    private Image heartImage;
+    private int score;
+    private int level;
+    private User currentUser;
+
     public GamePanel() {
 
-        setFocusable(true);
-        setBackground(Color.BLACK);
+        super("src/resources/images/1.png");
 
-        plane = new Plane(370, 500, 1);
+        heartImage = new ImageIcon("src/resources/images/heart.png").getImage();
+        // فعلا باشه تا اوکیش کنم
+        score = 0;
+        level = 1;
+
+        // برای دریافت ورودی صفحه کلید
+        setFocusable(true);
+
+        plane = new Plane((GameMain.WINDOW_WIDTH-75)/2, 400, 1);
 
         bullets = new ArrayList<>();
         enemies = new ArrayList<>();
@@ -45,13 +60,17 @@ public class GamePanel extends JPanel {
 
     }
 
+    public void setCurrentUser(User currentUser) {
+        this.currentUser = currentUser;
+    }
+
     //ایجاد دشمن های اولیه- فعلا NormalEnemy
     private void createEnemies() {
 
         for (int row = 0; row < 5; row++) {
             for (int col = 0; col < 8; col++) {
-                int x = 60 + col * 80;
-                int y = 40 + row * 70;
+                int x = 150 + col * 65;
+                int y = 40 + row * 60;
                 enemies.add(new NormalEnemy(x, y, 2));
             }
         }
@@ -183,6 +202,17 @@ public class GamePanel extends JPanel {
             enemy.draw(g);
         }
 
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial",Font.BOLD,18));
+        g.drawString("Lives:",20,30);
+        for(int i=0;i<plane.getLives();i++){
+            g.drawImage(heartImage, 90+i*30, 10, 25, 25, null);
+        }
+
+        g.drawString("Score: "+score,20,60);
+        g.drawString("Level: "+level,20,90);
+        g.drawString("Player: "+currentUser.getUsername(),20,120);
+
     }
 
     private void shoot() {
@@ -192,7 +222,7 @@ public class GamePanel extends JPanel {
         if(currentTime-lastShotTime<plane.getFireRate())
             return;
 
-        bullets.add( new Bullet ( plane.getX()+plane.getWidth()/2-5, plane.getY()));
+        bullets.add( new Bullet ( plane.getX()+plane.getWidth()/2-16, plane.getY()));
 
         lastShotTime=currentTime;
 
