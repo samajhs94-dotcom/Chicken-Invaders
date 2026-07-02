@@ -121,6 +121,9 @@ public class GamePanel extends BackgroundPanel {
             enemy.move();
         }
 
+        // برخورد تیر و دشمن
+        checkBulletEnemyCollision();
+
     }
 
     // کنترل صفحه کلید
@@ -227,6 +230,39 @@ public class GamePanel extends BackgroundPanel {
         lastShotTime=currentTime;
 
     }
+
+    //بررسی اینکه ایا گلوله به دشمن برخورد کرده یا نه
+    private void checkBulletEnemyCollision() {
+
+        Iterator<Bullet> bulletIterator = bullets.iterator();
+
+        while (bulletIterator.hasNext()) {
+
+            Bullet bullet = bulletIterator.next();
+            Iterator<Enemy> enemyIterator = enemies.iterator();
+
+            while (enemyIterator.hasNext()) {
+
+                Enemy enemy = enemyIterator.next();
+
+                if (bullet.getBounds().intersects(enemy.getBounds())) {
+
+                    enemy.takeDamage();
+                    bulletIterator.remove();
+
+                    if (enemy.isDead()) {
+                        enemyIterator.remove();
+                        score += 10;
+                    }
+                    break;
+
+                }
+
+            }
+        }
+
+    }
+
 
 
 }
