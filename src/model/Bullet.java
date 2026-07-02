@@ -19,11 +19,12 @@ public class Bullet {
 
         this.x=x;
         this.y=y;
-        width=10;
-        height=20;
+        width=32;
+        height=35;
         speed=10;
         damage=1;
         image= new ImageIcon("src/resources/images/bullet.png").getImage();
+
     }
 
     //گترها

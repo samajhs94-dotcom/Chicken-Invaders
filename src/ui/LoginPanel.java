@@ -21,7 +21,7 @@ public class LoginPanel extends BackgroundPanel{
     private JLabel messageLabel;
 
     public LoginPanel(GameMain frame, DatabaseManager db) {
-        super("src/resources/images/welcomeBackground.png");
+        super("src/resources/images/FirstBackground.png");
         this.frame = frame;
         this.db = db;
         initializeComponents();
@@ -47,6 +47,13 @@ public class LoginPanel extends BackgroundPanel{
         loginButton = new JButton("Login");
         registerButton = new JButton("Register");
         backButton = new JButton("Back");
+
+        //اندازه دکمه ها
+        Dimension buttonSize = new Dimension(120, 30);
+        loginButton.setPreferredSize(buttonSize);
+        registerButton.setPreferredSize(buttonSize);
+        backButton.setPreferredSize(buttonSize);
+
         //چاپ پیام
         messageLabel = new JLabel();
         messageLabel.setVisible(false); // اول دیده نشود
@@ -107,8 +114,7 @@ public class LoginPanel extends BackgroundPanel{
                         Timer timer = new Timer(1000, new ActionListener() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                frame.showMainMenu();
-                            }
+                                frame.showGamePanel();                            }
                         });
                         timer.setRepeats(false);
                         timer.start();

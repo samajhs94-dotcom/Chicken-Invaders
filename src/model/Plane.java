@@ -1,9 +1,13 @@
 package model;
 
+import main.GameMain;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class Plane {
+
+    public static final int MAX_LIVES = 5;
 
     private int x;
     private int y;
@@ -24,8 +28,8 @@ public class Plane {
 
         this.x=x;
         this.y=y;
-        width=60;
-        height=60;
+        width=75;
+        height=75;
 
         this.type=type;
         bulletCount = 1;
@@ -81,7 +85,7 @@ public class Plane {
     }
 
     public void moveRight() {
-        if (x + width < 800)
+        if (x + width < GameMain.WINDOW_WIDTH)
             x += speed;
     }
 
@@ -91,7 +95,7 @@ public class Plane {
     }
 
     public void moveDown() {
-        if (y + height < 600)
+        if (y + height < GameMain.WINDOW_HEIGHT)
             y += speed;
     }
 

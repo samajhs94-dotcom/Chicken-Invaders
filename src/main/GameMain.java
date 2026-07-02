@@ -1,6 +1,7 @@
 package main;
 import manager.DatabaseManager;
 import model.User;
+import ui.GamePanel;
 import ui.LoginPanel;
 import ui.MainMenu;
 import ui.RegisterPanel;
@@ -10,6 +11,8 @@ import java.awt.*;
 
 public class GameMain extends JFrame {
 
+    public static final int WINDOW_WIDTH = 800;
+    public static final int WINDOW_HEIGHT = 600;
 
     private CardLayout cardLayout;
     private JPanel mainPanel;
@@ -18,6 +21,8 @@ public class GameMain extends JFrame {
     private MainMenu mainMenu;
     private LoginPanel loginPanel;
     private RegisterPanel registerPanel;
+
+    private GamePanel gamePanel;
 
     private GameMain(){
 
@@ -38,13 +43,17 @@ public class GameMain extends JFrame {
     private void initializeFrame() {
 
         setTitle("Chicken Invaders");
-        setSize(1000,700);
+        setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         setLocationRelativeTo(null);//پنجره وسط صفجه باز شه
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);//کاربر نتونه سایز پنجره رو تغییر بده
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
         add(mainPanel);
+
+        gamePanel = new GamePanel();
+        mainPanel.add(gamePanel,"GAME");
+
     }
 
 
@@ -87,6 +96,8 @@ public class GameMain extends JFrame {
 
     public void showGamePanel() {
         cardLayout.show(mainPanel, "GAME");
+        gamePanel.requestFocusInWindow();
+        gamePanel.setCurrentUser(currentUser);
     }
 
 

@@ -25,7 +25,7 @@ public class RegisterPanel extends BackgroundPanel{
 
     public RegisterPanel(GameMain frame, DatabaseManager db) {
 
-        super("src/resources/images/welcomeBackground.png");
+        super("src/resources/images/FirstBackground.png");
         this.frame = frame;
         this.db = db;
 
@@ -136,6 +136,7 @@ public class RegisterPanel extends BackgroundPanel{
 
                     User user = new User(username, password);
                     db.registerUser(user);
+                    frame.setCurrentUser(user);
 
                     messageLabel.setForeground(new Color(1, 175, 1));
                     messageLabel.setText("Registration successful!");
@@ -152,7 +153,7 @@ public class RegisterPanel extends BackgroundPanel{
                                 @Override
                                 public void actionPerformed(ActionEvent e) {
 
-                                    frame.showLoginPanel();//یعنی اینجا
+                                    frame.showGamePanel();
 
                                 }
                             });
