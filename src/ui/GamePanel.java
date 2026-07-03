@@ -3,9 +3,7 @@ package ui;
 import enemy.Enemy;
 import enemy.NormalEnemy;
 import main.GameMain;
-import model.Bullet;
-import model.Plane;
-import model.User;
+import model.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -35,6 +33,12 @@ public class GamePanel extends BackgroundPanel {
     private int score;
     private int level;
     private User currentUser;
+
+    private ArrayList<Egg> eggs = new ArrayList<>();
+    private int direction = 1;
+
+    private boolean gameOver = false;
+
 
     public GamePanel() {
 
@@ -71,7 +75,7 @@ public class GamePanel extends BackgroundPanel {
             for (int col = 0; col < 8; col++) {
                 int x = 150 + col * 65;
                 int y = 40 + row * 60;
-                enemies.add(new NormalEnemy(x, y, 2));
+                enemies.add(new NormalEnemy(x, y));
             }
         }
 
@@ -105,24 +109,34 @@ public class GamePanel extends BackgroundPanel {
         if(downPressed)
             plane.moveDown();
 
+        updateInvincibility();
+
+        updateBullets();
+
+        moveEnemies();
+
+        handleEggDrop();
+        updateEggs();
+        checkEnemyPlaneCollision();
+
+        // برخورد تیر و دشمن
+        checkBulletEnemyCollision();
+
+    }
+
+    private void updateBullets() {
+
         Iterator<Bullet> iterator = bullets.iterator();
 
-        while(iterator.hasNext()){
+        while (iterator.hasNext()) {
 
             Bullet bullet = iterator.next();
             bullet.move();
-            if(bullet.isOutOfScreen()){
+            if (bullet.isOutOfScreen()) {
                 iterator.remove();
             }
 
         }
-
-        for (Enemy enemy : enemies) {
-            enemy.move();
-        }
-
-        // برخورد تیر و دشمن
-        checkBulletEnemyCollision();
 
     }
 
@@ -197,7 +211,10 @@ public class GamePanel extends BackgroundPanel {
 
         super.paintComponent(g);
 
-        plane.draw(g);
+        if (plane.shouldRender()) {
+            plane.draw(g);
+        }
+
         for (Bullet bullet : bullets) {
             bullet.draw(g);
         }
@@ -215,6 +232,30 @@ public class GamePanel extends BackgroundPanel {
         g.drawString("Score: "+score,20,60);
         g.drawString("Level: "+level,20,90);
         g.drawString("Player: "+currentUser.getUsername(),20,120);
+
+        for (Egg egg : eggs) {
+            egg.draw(g);
+        }
+
+        if (gameOver) {
+
+            Graphics2D g2 = (Graphics2D) g;
+
+            g2.setColor(new Color(0, 0, 0, 170));
+            g2.fillRect(0, 0, getWidth(), getHeight());
+
+            String text = "!! GAME OVER !!";
+
+            g2.setFont(new Font("Impact", Font.BOLD, 60));
+            g2.setColor(Color.RED);
+
+            FontMetrics fm = g2.getFontMetrics();
+
+            int x = (getWidth() - fm.stringWidth(text)) / 2;
+            int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+
+            g2.drawString(text, x, y);
+        }
 
     }
 
@@ -263,6 +304,128 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
+    //تولید تخم مرغ
+    private void handleEggDrop() {
 
+        for (Enemy enemy : enemies) {
+
+            if (enemy instanceof enemy.ShooterEnemy) {
+                if (Math.random() < 0.01) {
+                    eggs.add(new Egg(enemy.getX() + enemy.getWidth()/2, enemy.getY()));
+                }
+            }
+
+        }
+
+    }
+
+
+    //برخورد مرغ با هواپیما
+    private void checkEnemyPlaneCollision() {
+
+        Rectangle planeRect = new Rectangle(plane.getX(), plane.getY(), plane.getWidth(), plane.getHeight());
+
+        for (Enemy enemy : enemies) {
+            if (enemy.getBounds().intersects(planeRect)) {
+                handlePlayerHit();
+            }
+        }
+
+    }
+
+    //کم شدن جون
+    private void handlePlayerHit() {
+
+        if (plane.isInvincible())
+            return;
+
+        plane.setLives(plane.getLives() - 1);
+
+        //شروع حالت مخافظت
+        plane.setInvincible(true);
+
+        if (plane.getLives() <= 0) {
+            gameOver();
+        }
+
+    }
+
+    //مدیریت زمان اسیب ناپذیر بودن هواپیما
+    private void updateInvincibility() {
+
+        if (!plane.isInvincible())
+            return;
+
+        long now = System.currentTimeMillis();
+
+        //2 ثانیه اسیب ناپذیری
+        if (now - plane.getInvincibleStartTime() > 2000) {
+            plane.setInvincible(false);
+        }
+
+    }
+
+    private void gameOver() {
+
+        gameTimer.stop();
+        gameOver = true;
+        repaint();
+
+    }
+
+    //حرکت تخم مرغ، حذف از صفحه، برخورد با هواپیما
+    private void updateEggs() {
+
+        Iterator<Egg> it = eggs.iterator();
+
+        Rectangle planeRect = new Rectangle(plane.getX(), plane.getY(), plane.getWidth(), plane.getHeight());
+
+        while (it.hasNext()) {
+
+            Egg egg = it.next();
+            egg.move();
+
+            if (egg.isOutOfScreen()) {
+                it.remove();
+                continue;
+            }
+
+            if (egg.getBounds().intersects(planeRect)) {
+                handlePlayerHit();
+                it.remove();
+            }
+
+        }
+
+    }
+
+    private void moveEnemies() {
+
+        boolean changeDirection = false;
+
+        for (Enemy enemy : enemies) {
+
+            if (enemy.getX() <= 0 || enemy.getX() + enemy.getWidth() >= GameMain.WINDOW_WIDTH) {
+                changeDirection = true;
+                break;
+            }
+
+        }
+
+        if (changeDirection) {
+
+            direction *= -1;
+
+            for (Enemy enemy : enemies) {
+                enemy.setY(enemy.getY() + 20);
+            }
+
+        }
+
+        for (Enemy enemy : enemies) {
+            enemy.setX(enemy.getX() + (int)(direction * enemy.getSpeed()));
+        }
+
+    }
 
 }

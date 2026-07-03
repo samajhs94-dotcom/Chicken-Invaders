@@ -4,8 +4,9 @@ import javax.swing.*;
 
 public class NormalEnemy extends Enemy{
 
-    public NormalEnemy(int x, int y, int health){
-        super(x, y, 1, health, new ImageIcon("src/resources/images/NormalEnemy.png").getImage());
+    //در ادامه میزان سلامتی تو هر مرحله رو مشخص میکنم
+    public NormalEnemy(int x, int y){
+        super(x, y, 1, 1, new ImageIcon("src/resources/images/NormalEnemy.png").getImage());
     }
 
     @Override
