@@ -23,6 +23,10 @@ public class Plane {
     private Image image;
     private int fireRate;
 
+    private boolean invincible = false;
+    private long invincibleStartTime = 0;
+    private int blinkCounter = 0;
+
 
     public Plane(int x,int y,int type){
 
@@ -161,5 +165,29 @@ public class Plane {
         return height;
     }
 
+    public long getInvincibleStartTime() {
+        return invincibleStartTime;
+    }
+
+    public boolean isInvincible() {
+        return invincible;
+    }
+
+    public void setInvincible(boolean invincible) {
+        this.invincible = invincible;
+        if (invincible) {
+            invincibleStartTime = System.currentTimeMillis();
+        }
+    }
+
+    public boolean shouldRender() {
+
+        if (!invincible) return true;
+
+        // هر 200ms یک بار خاموش/روشن
+        long now = System.currentTimeMillis();
+
+        return ((now / 200) % 2) == 0;
+    }
 
 }
