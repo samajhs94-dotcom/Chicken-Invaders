@@ -1,8 +1,9 @@
 package ui;
 
-import enemy.Enemy;
-import enemy.NormalEnemy;
+import enemy.*;
 import main.GameMain;
+import manager.DatabaseManager;
+import manager.LevelManager;
 import model.*;
 
 import javax.swing.*;
@@ -12,6 +13,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 
 public class GamePanel extends BackgroundPanel {
@@ -31,7 +33,6 @@ public class GamePanel extends BackgroundPanel {
 
     private Image heartImage;
     private int score;
-    private int level;
     private User currentUser;
 
     private ArrayList<Egg> eggs = new ArrayList<>();
@@ -39,15 +40,49 @@ public class GamePanel extends BackgroundPanel {
 
     private boolean gameOver = false;
 
+    private LevelManager levelManager ;
+    private boolean levelFinished = false;
+    private Level currentLevel;
 
-    public GamePanel() {
+    private long lastEggDropTime = 0;
+
+    private ArrayList<EnemyBullet> enemyBullets = new ArrayList<>();
+
+    private Cell[][] grid;
+
+    private double formationOffsetX = 0;
+
+    private int[] rowOffsetsY = new int[5]; // برای ۵ ردیف
+
+    private DatabaseManager dbManager;
+
+    private boolean victory = false;
+
+    private Boss boss;
+    private ArrayList<BossBullet> bossBullets = new ArrayList<>();
+
+    private boolean paused = false;
+
+    private GameMain gameMain;
+
+
+    public GamePanel(DatabaseManager dbManager,GameMain gameMain) {
 
         super("src/resources/images/1.png");
 
         heartImage = new ImageIcon("src/resources/images/heart.png").getImage();
         // فعلا باشه تا اوکیش کنم
         score = 0;
-        level = 1;
+
+        this.gameMain = gameMain;
+
+        this.dbManager = dbManager;
+
+        levelManager = new LevelManager();
+        currentLevel = levelManager.getCurrentLevel();
+        grid = levelManager.buildGrid(currentLevel);
+
+        Arrays.fill(rowOffsetsY, 0);
 
         // برای دریافت ورودی صفحه کلید
         setFocusable(true);
@@ -65,20 +100,115 @@ public class GamePanel extends BackgroundPanel {
     }
 
     public void setCurrentUser(User currentUser) {
+
         this.currentUser = currentUser;
+
+        if (currentUser != null) {
+
+            resetGameState();
+            levelManager.reset();
+
+            currentLevel = levelManager.getCurrentLevel();
+            startCurrentLevel();
+
+        }
     }
 
-    //ایجاد دشمن های اولیه- فعلا NormalEnemy
+    private void resetGameState() {
+
+        score = 0;
+        gameOver = false;
+        victory = false;
+        levelFinished = false;
+
+        //اگه موقع خروج از بازی کلیدی نگه داشته شده باشه اثرش تو بازی جدید نمونه
+        paused = false;
+        leftPressed = false;
+        rightPressed = false;
+        upPressed = false;
+        downPressed = false;
+
+        plane = new Plane((GameMain.WINDOW_WIDTH - 75) / 2, 400, 1);
+
+        bullets.clear();
+        eggs.clear();
+        enemyBullets.clear();
+        bossBullets.clear();
+        boss = null;
+
+        lastShotTime = 0;
+        lastEggDropTime = 0;
+
+        if (gameTimer != null) {
+            gameTimer.stop();
+        }
+    }
+
+
+
+    private void startCurrentLevel() {
+
+        formationOffsetX = 0;
+        direction = 1;
+        Arrays.fill(rowOffsetsY, 0);
+
+        if (currentLevel.isBossLevel()) {
+
+            grid = null;
+            enemies.clear();
+
+            int startX = (GameMain.WINDOW_WIDTH - 150) / 2;
+
+            if (currentLevel.getLevelNumber() == 4) {
+                boss = new BossLevel4(startX, 60);
+            } else {
+                boss = new BossLevel8(startX, 40);
+            }
+
+            bossBullets.clear();
+
+        } else {
+
+            boss = null;
+            bossBullets.clear();
+            grid = levelManager.buildGrid(currentLevel);
+            createEnemies();
+
+        }
+    }
+
     private void createEnemies() {
 
-        for (int row = 0; row < 5; row++) {
-            for (int col = 0; col < 8; col++) {
-                int x = 150 + col * 65;
-                int y = 40 + row * 60;
-                enemies.add(new NormalEnemy(x, y));
+        enemies.clear();
+
+        Arrays.fill(rowOffsetsY, 0);
+
+        for (int r = 0; r < grid.length; r++) {
+
+            for (int c = 0; c < grid[r].length; c++) {
+
+                Cell cell = grid[r][c];
+                Enemy enemy = cell.createEnemy(currentLevel);                cell.setEnemy(enemy);
+                enemies.add(enemy);
+
             }
+
         }
 
+    }
+
+    public void startGame() {
+
+        if (gameTimer != null && !gameTimer.isRunning()) {
+            gameTimer.start();
+        }
+        requestFocusInWindow();
+    }
+
+    public void stopGame() {
+        if (gameTimer != null && gameTimer.isRunning()) {
+            gameTimer.stop();
+        }
     }
 
     private void initializeTimer() {
@@ -91,7 +221,6 @@ public class GamePanel extends BackgroundPanel {
             }
 
         });
-        gameTimer.start();
 
     }
 
@@ -113,15 +242,62 @@ public class GamePanel extends BackgroundPanel {
 
         updateBullets();
 
+        if (currentLevel.isBossLevel()) {
+            updateBossLevel();
+        } else {
+            updateNormalLevel();
+        }
+
+        checkLevelCompletion();
+
+    }
+
+
+    private void updateNormalLevel() {
+
         moveEnemies();
 
+        if (anyEnemyReachedBottom()) {
+            gameOver();
+            return;
+        }
+
         handleEggDrop();
+        updateZigzagEggAnimations();
+
+        handleShooterAttack();
+        updateEnemyBullets();
+
         updateEggs();
         checkEnemyPlaneCollision();
-
-        // برخورد تیر و دشمن
         checkBulletEnemyCollision();
+    }
 
+    private void updateBossLevel() {
+
+        if (boss == null) return;
+
+        boss.move(GameMain.WINDOW_WIDTH);
+        bossBullets.addAll(boss.tryAttack());
+
+        Iterator<BossBullet> it = bossBullets.iterator();
+        Rectangle planeRect = new Rectangle(plane.getX(), plane.getY(), plane.getWidth(), plane.getHeight());
+
+        while (it.hasNext()) {
+            BossBullet b = it.next();
+            b.move();
+
+            if (b.isOutOfScreen(GameMain.WINDOW_WIDTH, GameMain.WINDOW_HEIGHT)) {
+                it.remove();
+                continue;
+            }
+            if (b.getBounds().intersects(planeRect)) {
+                handlePlayerHit();
+                it.remove();
+            }
+        }
+
+        checkBulletBossCollision();
     }
 
     private void updateBullets() {
@@ -174,6 +350,22 @@ public class GamePanel extends BackgroundPanel {
                         shoot();
                         break;
 
+                    case KeyEvent.VK_P:
+                        paused = !paused;
+                        if (paused) {
+                            gameTimer.stop();
+                        } else {
+                            gameTimer.start();
+                        }
+                        repaint();
+                        break;
+
+                    case KeyEvent.VK_ESCAPE:
+                        if (!gameOver && !victory) {
+                            saveCurrentGameToDatabase();
+                        }
+                        gameMain.showMainMenu();
+                        break;
                 }
             }
 
@@ -222,42 +414,98 @@ public class GamePanel extends BackgroundPanel {
             enemy.draw(g);
         }
 
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial",Font.BOLD,18));
-        g.drawString("Lives:",20,30);
-        for(int i=0;i<plane.getLives();i++){
-            g.drawImage(heartImage, 90+i*30, 10, 25, 25, null);
+        if (boss != null) {
+            boss.draw(g);
         }
 
-        g.drawString("Score: "+score,20,60);
-        g.drawString("Level: "+level,20,90);
-        g.drawString("Player: "+currentUser.getUsername(),20,120);
+        for (BossBullet b : bossBullets) {
+            b.draw(g);
+        }
 
         for (Egg egg : eggs) {
             egg.draw(g);
         }
 
+        for (EnemyBullet b : enemyBullets) {
+            b.draw(g);
+        }
+
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial",Font.BOLD,18));
+        g.drawString("Lives:",20,30);
+
+        for(int i=0;i<plane.getLives();i++){
+            g.drawImage(heartImage, 90+i*30, 10, 25, 25, null);
+        }
+
+        g.drawString("Score: "+score,20,60);
+
+        g.drawString("Level: "+levelManager.getLevelNumber(),20,90);
+
+        if (currentUser != null) {
+            g.drawString("Player: " + currentUser.getUsername(), 20, 120);
+        }
+
+        g.drawString("Fire : " + plane.getBulletCount(),20,150);
+
+        pausedGame(g);
+
         if (gameOver) {
+            drawOverlay(g, "!! GAME OVER !!", Color.RED);
+        }
 
-            Graphics2D g2 = (Graphics2D) g;
-
-            g2.setColor(new Color(0, 0, 0, 170));
-            g2.fillRect(0, 0, getWidth(), getHeight());
-
-            String text = "!! GAME OVER !!";
-
-            g2.setFont(new Font("Impact", Font.BOLD, 60));
-            g2.setColor(Color.RED);
-
-            FontMetrics fm = g2.getFontMetrics();
-
-            int x = (getWidth() - fm.stringWidth(text)) / 2;
-            int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
-
-            g2.drawString(text, x, y);
+        if (victory) {
+            drawOverlay(g, " YOU WON :)", Color.GREEN);
         }
 
     }
+
+    private void pausedGame(Graphics g){
+        if (paused) {
+
+            Graphics2D g2 = (Graphics2D) g;
+
+            // تیره شدن صفحه
+            g2.setColor(new Color(0, 0, 0, 170));
+            g2.fillRect(0, 0, getWidth(), getHeight());
+
+            // مثلث وسط صفحه
+            Polygon triangle = new Polygon();
+
+            triangle.addPoint(getWidth()/2 - 15, getHeight()/2 - 20);
+            triangle.addPoint(getWidth()/2 - 15, getHeight()/2 + 20);
+            triangle.addPoint(getWidth()/2 + 20, getHeight()/2);
+
+            g2.setColor(Color.WHITE);
+            g2.fillPolygon(triangle);
+        }
+    }
+
+    private void drawOverlay(Graphics g, String text, Color color) {
+
+        Graphics2D g2 = (Graphics2D) g;
+
+        g2.setColor(new Color(0, 0, 0, 170));
+        g2.fillRect(0, 0, getWidth(), getHeight());
+
+        g2.setFont(new Font("Impact", Font.BOLD, 50));
+        g2.setColor(color);
+
+        FontMetrics fm = g2.getFontMetrics();
+        int x = (getWidth() - fm.stringWidth(text)) / 2;
+        int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+
+        g2.drawString(text, x, y);
+    }
+
+    private void updateZigzagEggAnimations() {
+        for (Enemy enemy : enemies) {
+            if (enemy instanceof ZigzagEnemy) {
+                ((ZigzagEnemy) enemy).updateEggZigzag();
+            }
+        }
+    }
+
 
     private void shoot() {
 
@@ -271,6 +519,7 @@ public class GamePanel extends BackgroundPanel {
         lastShotTime=currentTime;
 
     }
+
 
     //بررسی اینکه ایا گلوله به دشمن برخورد کرده یا نه
     private void checkBulletEnemyCollision() {
@@ -292,8 +541,26 @@ public class GamePanel extends BackgroundPanel {
                     bulletIterator.remove();
 
                     if (enemy.isDead()) {
+
+                        Cell cell = findCell(enemy);
                         enemyIterator.remove();
-                        score += 10;
+
+                        if (cell != null) {
+
+                            cell.removeEnemy();
+                            if (cell.hasRemainingEnemies()) {
+
+                                Enemy newEnemy = cell.spawnEnemy(currentLevel, formationOffsetX, rowOffsetsY[cell.getRow()]);
+                                if (newEnemy != null) {
+                                    enemies.add(newEnemy);
+
+                                }
+
+                            }
+
+                        }
+
+                        score += getEnemyScore(enemy);
                     }
                     break;
 
@@ -304,19 +571,151 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
-    //تولید تخم مرغ
+    // برخورد گلوله‌ی هواپیما با غول
+    private void checkBulletBossCollision() {
+
+        if (boss == null) return;
+
+        Iterator<Bullet> it = bullets.iterator();
+
+        while (it.hasNext()) {
+            Bullet bullet = it.next();
+
+            if (bullet.getBounds().intersects(boss.getBounds())) {
+
+                boss.takeDamage();
+                it.remove();
+
+                // برخورد گلوله به غول
+                if (boss.isDead()) {
+
+                    // مرگ غول
+
+                    if (currentLevel.getLevelNumber() == 4) {
+                        score += 500;
+                    } else {
+                        score += 1000;
+                    }
+                    bossBullets.clear();
+                    boss = null;
+                    return;
+                }
+            }
+        }
+    }
+
+    private int getEnemyScore(Enemy enemy) {
+
+        if (enemy instanceof NormalEnemy)
+            return 10;
+
+        if (enemy instanceof FastEnemy)
+            return 15;
+
+        if (enemy instanceof ZigzagEnemy)
+            return 20;
+
+        if (enemy instanceof ShooterEnemy)
+            return 25;
+
+        return 0;
+    }
+
+
+    //تولید تخم مرغ برای پرتاب
     private void handleEggDrop() {
 
-        for (Enemy enemy : enemies) {
+        if (enemies.isEmpty())
+            return;
 
-            if (enemy instanceof enemy.ShooterEnemy) {
-                if (Math.random() < 0.01) {
-                    eggs.add(new Egg(enemy.getX() + enemy.getWidth()/2, enemy.getY()));
+        long now = System.currentTimeMillis();
+
+        if (now - lastEggDropTime < currentLevel.getEggInterval())
+            return;
+
+        lastEggDropTime = now;
+
+        Enemy enemy = enemies.get((int)(Math.random() * enemies.size()));
+
+        eggs.add(new Egg(enemy.getX() + enemy.getWidth()/2,
+                enemy.getY() + enemy.getHeight()));
+
+        if (enemy instanceof ZigzagEnemy) {
+            ((ZigzagEnemy) enemy).startEggZigzag();
+        }
+
+    }
+
+    //تولید گلوله دشمن
+    private void handleShooterAttack() {
+
+        long now = System.currentTimeMillis();
+
+        final int verticalRange = 80;
+
+        for (Enemy enemy : enemies) {
+            if (enemy instanceof ShooterEnemy shooter) {
+
+                int shooterCenterY = shooter.getY() + shooter.getHeight() / 2;
+                int planeCenterY = plane.getY() + plane.getHeight() / 2;
+
+                // وقتی گلوله افقی شوتر شلیک شه هواپیما سمتش باشه
+                if (Math.abs(shooterCenterY - planeCenterY) > verticalRange) {
+                    continue;
                 }
+
+                // ایا زمان کافی از شلیک قبلی گذشته یا نه
+                if (!shooter.canShoot(now)) {
+                    continue;
+                }
+
+                // فقط بعضی وقتها شلیک کنه نه همیشه
+                if (Math.random() > 0.55) {
+                    continue;
+                }
+
+                int dx;
+
+                if (plane.getX() < shooter.getX()) {
+                    dx = -5;
+                } else {
+                    dx = 5;
+                }
+
+                enemyBullets.add(new EnemyBullet(shooter.getX() + shooter.getWidth() / 2,
+                        shooter.getY() + shooter.getHeight() / 2, dx, 0));
+
+                //ثبت زمان شلیک
+                shooter.recordShot(now);
+
             }
 
         }
 
+    }
+
+    //حرکت و برخورد گلوله دشمن
+    private void updateEnemyBullets() {
+
+        Iterator<EnemyBullet> it = enemyBullets.iterator();
+
+        Rectangle planeRect = new Rectangle(plane.getX(), plane.getY(), plane.getWidth(), plane.getHeight());
+
+        while (it.hasNext()) {
+
+            EnemyBullet b = it.next();
+            b.move();
+
+            if (b.isOutOfScreen(GameMain.WINDOW_WIDTH, GameMain.WINDOW_HEIGHT)) {
+                it.remove();
+                continue;
+            }
+
+            if (b.getBounds().intersects(planeRect)) {
+                handlePlayerHit();
+                it.remove();
+            }
+        }
     }
 
 
@@ -367,9 +766,39 @@ public class GamePanel extends BackgroundPanel {
 
     private void gameOver() {
 
+        if (gameOver || victory) {
+            return;
+        }
         gameTimer.stop();
         gameOver = true;
+        saveCurrentGameToDatabase();
         repaint();
+
+    }
+
+    private void winGame() {
+        if (gameOver || victory) {
+            return;
+        }
+        gameTimer.stop();
+        victory = true;
+        saveCurrentGameToDatabase();
+        repaint();
+    }
+
+    private void saveCurrentGameToDatabase() {
+
+        if (currentUser == null || dbManager == null) {
+            return; // اگر کاربر وارد نشده باشد، رکوردی ذخیره نمی‌شود
+        }
+
+        int levelReached = levelManager.getLevelNumber();
+
+
+        dbManager.saveGame(currentUser, score, levelReached, currentUser.getMusicEnabled(),
+                currentUser.getShotSoundEnabled(), currentUser.getExplosionSoundEnabled(),
+                currentUser.getGameOverSoundEnabled());
+
 
     }
 
@@ -389,7 +818,6 @@ public class GamePanel extends BackgroundPanel {
                 it.remove();
                 continue;
             }
-
             if (egg.getBounds().intersects(planeRect)) {
                 handlePlayerHit();
                 it.remove();
@@ -399,33 +827,160 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
+    private boolean anyEnemyReachedBottom() {
+
+        if (enemies.isEmpty()) {
+            return false;
+        }
+        for (Enemy enemy : enemies) {
+            //اگه یکی از مرغها به پایین صفحه رسید گیم اوررر
+            if (enemy.getY() + enemy.getHeight() >= GameMain.WINDOW_HEIGHT) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
     private void moveEnemies() {
 
-        boolean changeDirection = false;
+        if (enemies.isEmpty() || currentLevel.isBossLevel() || grid == null)
+            return;
 
-        for (Enemy enemy : enemies) {
+        int leftColumn = 0;
 
-            if (enemy.getX() <= 0 || enemy.getX() + enemy.getWidth() >= GameMain.WINDOW_WIDTH) {
-                changeDirection = true;
-                break;
-            }
-
+        while (leftColumn < grid[0].length && !isColumnActive(leftColumn)) {
+            leftColumn++;
         }
 
-        if (changeDirection) {
+        int rightColumn = grid[0].length - 1;
+
+        while (rightColumn >= 0 && !isColumnActive(rightColumn)) {
+            rightColumn--;
+        }
+
+        if (leftColumn >= grid[0].length || rightColumn < 0) {
+            return;
+        }
+
+        int enemyWidth = 50;
+
+        double leftEdge = grid[0][leftColumn].getBaseX() + formationOffsetX;
+        double rightEdge = grid[0][rightColumn].getBaseX() + formationOffsetX + enemyWidth;
+
+        if (leftEdge <= 0 || rightEdge >= GameMain.WINDOW_WIDTH) {
 
             direction *= -1;
 
-            for (Enemy enemy : enemies) {
-                enemy.setY(enemy.getY() + 20);
+            for (int r = 0; r < rowOffsetsY.length; r++) {
+                rowOffsetsY[r] += currentLevel.getDownStep();
+            }
+
+            // جلوگیری از گیر کردن روی لبه
+            if (leftEdge <= 0) {
+                formationOffsetX = -grid[0][leftColumn].getBaseX();
+            }
+            else {
+                formationOffsetX = GameMain.WINDOW_WIDTH - enemyWidth
+                        - grid[0][rightColumn].getBaseX();
             }
 
         }
 
+        //حرکت اصلی کل شبکه
+        formationOffsetX += direction * currentLevel.getHorizontalSpeed();
+
         for (Enemy enemy : enemies) {
-            enemy.setX(enemy.getX() + (int)(direction * enemy.getSpeed()));
+
+            Cell cell = findCell(enemy);
+
+            if (cell == null) {
+                continue;
+            }
+
+            double targetX = cell.getBaseX() + formationOffsetX;
+            double targetY = cell.getBaseY() + rowOffsetsY[cell.getRow()];
+
+            if (enemy.hasReachedTarget()) {
+                // مرغ معمولی، زیگزاگ، شوتر و فست همه جایگاه شبکه‌ای خودشان را میگیرن
+                enemy.setX(targetX);
+                enemy.setY(targetY);
+            }
+            else {
+                // مرغ جایگزین از بالا میاد سمت جایگاه خودش
+                enemy.setTarget(targetX, targetY);
+                enemy.moveToTarget();
+            }
+
         }
 
     }
+
+
+    private boolean isColumnActive(int col) {
+
+        for (int r = 0; r < grid.length; r++) {
+
+            Cell cell = grid[r][col];
+
+            // اگر هنوز مرغ دارد
+            if (cell.hasEnemy())
+                return true;
+
+            // اگر قرار است دوباره مرغ تولید شود
+            if (cell.hasRemainingEnemies())
+                return true;
+        }
+
+        return false;
+    }
+
+
+    private Cell findCell(Enemy enemy) {
+
+        for (int r = 0; r < grid.length; r++) {
+            for (int c = 0; c < grid[r].length; c++) {
+
+                if (grid[r][c].getEnemy() == enemy)
+                    return grid[r][c];
+
+            }
+        }
+
+        return null;
+    }
+
+    // بررسی پایان مرحله برای هر دو حالت (شبکه‌ای و غول)
+    private void checkLevelCompletion() {
+
+        boolean finished;
+
+        if (currentLevel.isBossLevel()) {
+            finished = (boss == null);
+        } else {
+            finished = enemies.isEmpty();
+        }
+
+        if (finished && !levelFinished) {
+
+            levelFinished = true;
+
+            if (!currentLevel.isBossLevel()) {
+                score += 200;
+            }
+
+            if (levelManager.isLastLevel()) {
+                winGame();
+                return;
+            }
+
+            levelManager.nextLevel();
+            currentLevel = levelManager.getCurrentLevel();
+
+            startCurrentLevel();
+            levelFinished = false;
+        }
+    }
+
 
 }

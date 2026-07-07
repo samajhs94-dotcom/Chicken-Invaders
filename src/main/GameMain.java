@@ -51,7 +51,7 @@ public class GameMain extends JFrame {
         mainPanel = new JPanel(cardLayout);
         add(mainPanel);
 
-        gamePanel = new GamePanel();
+        gamePanel = new GamePanel(db,this);
         mainPanel.add(gamePanel,"GAME");
 
     }
@@ -71,33 +71,39 @@ public class GameMain extends JFrame {
 
     //جابه جایی بین صفحات
     public void showMainMenu() {
+        gamePanel.stopGame();
         cardLayout.show(mainPanel,"MENU");
     }
 
     public void showLoginPanel() {
+        gamePanel.stopGame();
         cardLayout.show(mainPanel,"LOGIN");
     }
 
     public void showRegisterPanel() {
+        gamePanel.stopGame();
         cardLayout.show(mainPanel,"REGISTER");
     }
 
     public void showHighScorePanel() {
+        gamePanel.stopGame();
         cardLayout.show(mainPanel, "HIGHSCORE");
     }
 
     public void showSettingsPanel() {
+        gamePanel.stopGame();
         cardLayout.show(mainPanel, "SETTINGS");
     }
 
     public void showHowToPlayPanel() {
+        gamePanel.stopGame();
         cardLayout.show(mainPanel, "HOWTOPLAY");
     }
 
     public void showGamePanel() {
         cardLayout.show(mainPanel, "GAME");
-        gamePanel.requestFocusInWindow();
         gamePanel.setCurrentUser(currentUser);
+        gamePanel.startGame();
     }
 
 

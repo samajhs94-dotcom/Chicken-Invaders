@@ -1,6 +1,7 @@
 package model;
 
 import enemy.*;
+import main.GameMain;
 
 public class Cell {
 
@@ -13,6 +14,9 @@ public class Cell {
 
     private EnemyType type;
 
+    private int baseX;
+    private int baseY;
+
     // تعداد دفعاتی که این خانه هنوز باید دوباره پر شود
     private int counter;
 
@@ -21,6 +25,8 @@ public class Cell {
         this.col = col;
         this.x = x;
         this.y = y;
+        this.baseX=x;
+        this.baseY=y;
         this.type = type;
         this.counter = counter;
     }
@@ -33,6 +39,7 @@ public class Cell {
     // حذف دشمن از خانه
     public void removeEnemy() {
         enemy = null;
+        decreaseCounter();
     }
 
     // کم شدن شمارنده
@@ -78,5 +85,56 @@ public class Cell {
         this.counter = counter;
     }
 
+    public Enemy createEnemy(Level level) {
+
+        switch (type) {
+
+            case NORMAL:
+                return new NormalEnemy(x,y, level.getNormalHealth());
+
+            case FAST:
+                return new FastEnemy(x,y, level.getFastHealth());
+
+            case ZIGZAG:
+                return new ZigzagEnemy(x,y, level.getZigzagHealth());
+
+            case SHOOTER:
+                return new ShooterEnemy(x,y, level.getShooterHealth());
+
+        }
+        return null;
+
+    }
+
+    public Enemy spawnEnemy(Level level, double offsetX, int offsetY) {
+
+        if (counter <= 0)
+            return null;
+
+        Enemy enemy = createEnemy(level);
+
+        // مرغ جایگزین از گوشه بالا-چپ یا بالا-راست وارد می‌شود
+        boolean fromLeft = Math.random() < 0.5;
+
+        if (fromLeft) {
+            enemy.setX(-enemy.getWidth());
+        } else {
+            enemy.setX(GameMain.WINDOW_WIDTH);
+        }
+
+        enemy.setY(-enemy.getHeight());
+
+        int targetX = (int) Math.round(baseX + offsetX);
+        int targetY = baseY + offsetY;
+
+        enemy.setTarget(targetX, targetY);
+
+        this.enemy = enemy;
+
+        return enemy;
+    }
+
+    public int getBaseX() { return baseX; }
+    public int getBaseY() { return baseY; }
 
 }
