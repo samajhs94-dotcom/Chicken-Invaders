@@ -79,6 +79,8 @@ public class GamePanel extends BackgroundPanel {
     private long shieldEndTime = 0;
     private long freezeEndTime = 0;
 
+    private ArrayList<Explosion> explosions = new ArrayList<>();
+
 
     public GamePanel(DatabaseManager dbManager,GameMain gameMain) {
 
@@ -149,6 +151,7 @@ public class GamePanel extends BackgroundPanel {
         enemyBullets.clear();
         bossBullets.clear();
         powerUps.clear();
+        explosions.clear();
         boss = null;
 
         lastShotTime = 0;
@@ -265,6 +268,7 @@ public class GamePanel extends BackgroundPanel {
 
         updateBullets();
         updatePowerUps();
+        updateExplosions();
 
         if (currentLevel.isBossLevel()) {
             updateBossLevel();
@@ -465,6 +469,10 @@ public class GamePanel extends BackgroundPanel {
 
         for (PowerUp powerUp : powerUps) {
             powerUp.draw(g);
+        }
+
+        for (Explosion explosion : explosions) {
+            explosion.draw(g);
         }
 
         g.setColor(Color.WHITE);
@@ -686,6 +694,25 @@ public class GamePanel extends BackgroundPanel {
         }
     }
 
+    private void updateExplosions() {
+
+        Iterator<Explosion> it = explosions.iterator();
+
+        while (it.hasNext()) {
+            Explosion explosion = it.next();
+
+            explosion.update();
+
+            if (explosion.isFinished()) {
+                it.remove();
+            }
+        }
+    }
+
+    private void addExplosion(int x, int y) {
+        explosions.add(new Explosion(x, y));
+    }
+
     //بررسی اینکه ایا گلوله به دشمن برخورد کرده یا نه
     private void checkBulletEnemyCollision() {
 
@@ -709,6 +736,9 @@ public class GamePanel extends BackgroundPanel {
 
                         Cell cell = findCell(enemy);
                         enemyIterator.remove();
+
+                        addExplosion(enemy.getX() + enemy.getWidth() / 2,
+                                enemy.getY() + enemy.getHeight() / 2);
 
                         //ساخت پاوراپ با احتمال 20 درصد
                         trySpawnPowerUp(enemy.getX() + enemy.getWidth() / 2 - 20,
@@ -758,8 +788,10 @@ public class GamePanel extends BackgroundPanel {
                 // برخورد گلوله به غول
                 if (boss.isDead()) {
 
-                    // مرگ غول
+                    addExplosion(boss.getX() + boss.getWidth() / 2,
+                            boss.getY() + boss.getHeight() / 2);
 
+                    // مرگ غول
                     if (currentLevel.getLevelNumber() == 4) {
                         score += 500;
                     } else {
@@ -909,6 +941,9 @@ public class GamePanel extends BackgroundPanel {
 
         if (plane.isInvincible())
             return;
+
+        addExplosion(plane.getX() + plane.getWidth() / 2,
+                plane.getY() + plane.getHeight() / 2);
 
         plane.setLives(plane.getLives() - 1);
 
