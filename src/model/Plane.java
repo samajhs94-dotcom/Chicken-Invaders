@@ -4,10 +4,12 @@ import main.GameMain;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
 public class Plane {
 
     public static final int MAX_LIVES = 5;
+    public static final int MAX_BULLET_COUNT = 10;
 
     private int x;
     private int y;
@@ -17,15 +19,14 @@ public class Plane {
     private int lives;
     private int type;//این قسمت برای وقتیه که خواستم قسمت اختیاری پروژه رو بزنم
     private int bulletCount;
-    private boolean doubleBullet;
     private boolean shield;
     private boolean rapidFire;
     private Image image;
+    private BufferedImage shieldGlowImage;
     private int fireRate;
 
     private boolean invincible = false;
     private long invincibleStartTime = 0;
-    private int blinkCounter = 0;
 
 
     public Plane(int x,int y,int type){
@@ -38,7 +39,6 @@ public class Plane {
         this.type=type;
         bulletCount = 1;
 
-        doubleBullet = false;
         shield = false;
         rapidFire = false;
 
@@ -77,10 +77,63 @@ public class Plane {
                 image = new ImageIcon("src/resources/images/DefaultPlane.png").getImage();
         }
 
+        createShieldGlow();
+
+    }
+
+    private void createShieldGlow() {
+
+        shieldGlowImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g2 = shieldGlowImage.createGraphics();
+
+        // کپی کردن شکل هواپیما
+        g2.drawImage(image, 0, 0, width, height, null);
+
+        // عوض کردن شکل کپی شده به ابی
+        g2.setComposite(AlphaComposite.SrcIn);
+        g2.setColor(new Color(80, 190, 255, 200));
+        g2.fillRect(0, 0, width, height);
+
+        g2.dispose();
     }
 
     public void draw(Graphics g) {
-        g.drawImage(image, x, y, width, height, null);
+
+        Graphics2D g2 = (Graphics2D) g.create();
+
+        if (shield && shieldGlowImage != null) {
+
+            // Outer glow
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.18f));
+
+            for (int dx = -7; dx <= 7; dx += 7) {
+                for (int dy = -7; dy <= 7; dy += 7) {
+                    if (dx != 0 || dy != 0) {
+                        g2.drawImage(shieldGlowImage, x + dx, y + dy, null);
+                    }
+                }
+            }
+
+            // Inner glow
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.35f));
+
+            for (int dx = -3; dx <= 3; dx += 3) {
+                for (int dy = -3; dy <= 3; dy += 3) {
+                    if (dx != 0 || dy != 0) {
+                        g2.drawImage(shieldGlowImage, x + dx, y + dy, null);
+                    }
+                }
+            }
+        }
+
+        // Normal drawing mode
+        g2.setComposite(AlphaComposite.SrcOver);
+
+        // Draw plane over glow
+        g2.drawImage(image, x, y, width, height, null);
+
+        g2.dispose();
     }
 
     public void moveLeft() {

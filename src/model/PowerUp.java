@@ -58,7 +58,7 @@ public class PowerUp {
                 return "src/resources/images/heal.png";
 
             case SHIELD:
-                return "src/resources/images/shield.png";
+                return "src/resources/images/sheild.png";
 
             case FREEZE_BOMB:
                 return "src/resources/images/freeze.png";

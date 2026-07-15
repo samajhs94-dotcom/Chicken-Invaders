@@ -6,21 +6,29 @@ public class BossLevel4 extends Boss {
 
 
     private double verticalPhase = 0;
+    private double baseY;
+
 
     public BossLevel4(int startX, int startY) {
+
         super(startX, startY, 50, 1.5, 1500, 4,
-                new ImageIcon("src/resources/images/boss1.png").getImage());
+             4,new ImageIcon("src/resources/images/boss1.png").getImage());
+
+        baseY = startY;
+
     }
 
     @Override
     public void move(int screenWidth) {
 
+        //حرکت افقی
         x += direction * horizontalSpeed;
 
+        //تغییر جهت هنگام رسیدن به لبه
         if (x <= 0 || x + width >= screenWidth) {
             direction *= -1;
 
-            //نگهداشتن دشمن تو صفحه اسکرین بعد از تغییر جهت
+            // جلوگیری از خارج شدن باس از صفحه
             if (x < 0) {
                 x = 0;
             } else if (x + width > screenWidth) {
@@ -30,7 +38,7 @@ public class BossLevel4 extends Boss {
 
         // حرکت عمودی آروم با دامنه‌ی کوچیک
         verticalPhase += 0.02;
-        y = 60 + Math.sin(verticalPhase) * 15;
+        y = baseY + Math.sin(verticalPhase) * 20;
     }
 
 }

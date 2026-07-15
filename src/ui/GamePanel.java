@@ -43,6 +43,7 @@ public class GamePanel extends BackgroundPanel {
 
     private LevelManager levelManager ;
     private boolean levelFinished = false;
+    private long levelFinishTime = 0;
     private Level currentLevel;
 
     private long lastEggDropTime = 0;
@@ -63,6 +64,7 @@ public class GamePanel extends BackgroundPanel {
     private ArrayList<BossBullet> bossBullets = new ArrayList<>();
 
     private boolean paused = false;
+    private long pauseStartTime = 0;
 
     private GameMain gameMain;
 
@@ -140,9 +142,11 @@ public class GamePanel extends BackgroundPanel {
         gameOver = false;
         victory = false;
         levelFinished = false;
+        levelFinishTime = 0;
 
         //اگه موقع خروج از بازی کلیدی نگه داشته شده باشه اثرش تو بازی جدید نمونه
         paused = false;
+        pauseStartTime = 0;
         leftPressed = false;
         rightPressed = false;
         upPressed = false;
@@ -177,6 +181,13 @@ public class GamePanel extends BackgroundPanel {
 
     private void startCurrentLevel() {
 
+        // پاک کردن اشیای مرحله قبلی
+        bullets.clear();
+        eggs.clear();
+        enemyBullets.clear();
+        explosions.clear();
+        bossBullets.clear();
+
         formationOffsetX = 0;
         direction = 1;
         Arrays.fill(rowOffsetsY, 0);
@@ -204,6 +215,55 @@ public class GamePanel extends BackgroundPanel {
             createEnemies();
 
         }
+    }
+
+    private void togglePause() {
+
+        // بعد از پایان بازی امکان توقف و ادامه وجود نداره
+        if (gameOver || victory) {
+            return;
+        }
+
+        if (!paused) {
+
+            paused = true;
+            pauseStartTime = System.currentTimeMillis();
+
+            // آزاد کردن کلیدهای حرکتی
+            leftPressed = false;
+            rightPressed = false;
+            upPressed = false;
+            downPressed = false;
+
+            gameTimer.stop();
+
+        } else {
+
+            long now = System.currentTimeMillis();
+            long pauseDuration = now - pauseStartTime;
+
+            // حفظ زمان باقی‌مانده پاورآپ‌ها
+            if (plane.isRapidFire()) {
+                rapidFireEndTime += pauseDuration;
+            }
+
+            if (plane.hasShield()) {
+                shieldEndTime += pauseDuration;
+            }
+
+            if (freezeEndTime > pauseStartTime) {
+                freezeEndTime += pauseDuration;
+            }
+
+            // حفظ زمان شلیک هواپیما و تخم‌اندازی مرغ‌ها
+            lastShotTime += pauseDuration;
+            lastEggDropTime += pauseDuration;
+
+            paused = false;
+            gameTimer.start();
+        }
+
+        repaint();
     }
 
     private void createEnemies() {
@@ -365,6 +425,11 @@ public class GamePanel extends BackgroundPanel {
             @Override
             public void keyPressed(KeyEvent e) {
 
+                if (paused && e.getKeyCode() != KeyEvent.VK_P &&
+                        e.getKeyCode() != KeyEvent.VK_ESCAPE) {
+                    return;
+                }
+
                 switch (e.getKeyCode()) {
 
                     case KeyEvent.VK_LEFT:
@@ -388,17 +453,13 @@ public class GamePanel extends BackgroundPanel {
                         break;
 
                     case KeyEvent.VK_SPACE://چون یه عمل لحظه ایه و نه پیوسته مثل بقیه کلید ها
-                        shoot();
+                        if (!gameOver && !victory) {
+                            shoot();
+                        }
                         break;
 
                     case KeyEvent.VK_P:
-                        paused = !paused;
-                        if (paused) {
-                            gameTimer.stop();
-                        } else {
-                            gameTimer.start();
-                        }
-                        repaint();
+                        togglePause();
                         break;
 
                     case KeyEvent.VK_ESCAPE:
@@ -637,7 +698,9 @@ public class GamePanel extends BackgroundPanel {
         switch (powerUp.getType()) {
 
             case FIRE_ADD:
-                plane.setBulletCount(plane.getBulletCount() + 1);
+                if(plane.getBulletCount()<Plane.MAX_BULLET_COUNT) {
+                    plane.setBulletCount(plane.getBulletCount() + 1);
+                }
                 break;
 
             case RAPID_FIRE:
@@ -1196,6 +1259,18 @@ public class GamePanel extends BackgroundPanel {
 
         if (finished && !levelFinished) {
 
+            // اولین بار زمان پایان مرحله ثبت می‌شود
+            if (levelFinishTime == 0) {
+                levelFinishTime = System.currentTimeMillis();
+                return;
+            }
+
+            // نیم ثانیه برای نمایش انفجار صبر می‌کنیم
+            if (System.currentTimeMillis() - levelFinishTime < 500) {
+                return;
+            }
+
+            levelFinishTime = 0;
             levelFinished = true;
 
             if (!currentLevel.isBossLevel()) {
