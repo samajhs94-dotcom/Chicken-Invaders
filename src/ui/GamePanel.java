@@ -4,6 +4,7 @@ import enemy.*;
 import main.GameMain;
 import manager.DatabaseManager;
 import manager.LevelManager;
+import manager.SoundManager;
 import model.*;
 
 import javax.swing.*;
@@ -79,10 +80,12 @@ public class GamePanel extends BackgroundPanel {
     private long shieldEndTime = 0;
     private long freezeEndTime = 0;
 
+    private SoundManager soundManager;
+
     private ArrayList<Explosion> explosions = new ArrayList<>();
 
 
-    public GamePanel(DatabaseManager dbManager,GameMain gameMain) {
+    public GamePanel(DatabaseManager dbManager,GameMain gameMain,SoundManager soundManager) {
 
         super("src/resources/images/1.png");
 
@@ -93,6 +96,7 @@ public class GamePanel extends BackgroundPanel {
         this.gameMain = gameMain;
 
         this.dbManager = dbManager;
+        this.soundManager = soundManager;
 
         levelManager = new LevelManager();
         currentLevel = levelManager.getCurrentLevel();
@@ -499,11 +503,28 @@ public class GamePanel extends BackgroundPanel {
 
         if (gameOver) {
             drawOverlay(g, "!! GAME OVER !!", Color.RED);
+            drawEscapeMessage(g);
+
         }
 
         if (victory) {
             drawOverlay(g, " YOU WON :)", Color.GREEN);
+            drawEscapeMessage(g);
+
         }
+
+    }
+
+    private void drawEscapeMessage(Graphics g) {
+
+        Graphics2D g2 = (Graphics2D) g;
+        String message = "Press ESC to return to the main menu";
+        g2.setFont(new Font("Arial", Font.BOLD, 20));
+        g2.setColor(Color.WHITE);
+        FontMetrics fontMetrics = g2.getFontMetrics();
+        int x = (getWidth() - fontMetrics.stringWidth(message)) / 2;
+        int y = getHeight() / 2 + 70;
+        g2.drawString(message, x, y);
 
     }
 
@@ -578,7 +599,7 @@ public class GamePanel extends BackgroundPanel {
         for (int i = 0; i < bulletCount; i++) {
             bullets.add(new Bullet(startX + i * spacing, plane.getY()));
         }
-
+        soundManager.playShot();
         lastShotTime=currentTime;
 
     }
@@ -711,6 +732,7 @@ public class GamePanel extends BackgroundPanel {
 
     private void addExplosion(int x, int y) {
         explosions.add(new Explosion(x, y));
+        soundManager.playExplosion();
     }
 
     //بررسی اینکه ایا گلوله به دشمن برخورد کرده یا نه
@@ -978,6 +1000,8 @@ public class GamePanel extends BackgroundPanel {
         }
         gameTimer.stop();
         gameOver = true;
+        soundManager.stopBackgroundMusic();
+        soundManager.playGameOver();
         saveCurrentGameToDatabase();
         repaint();
 
@@ -989,6 +1013,8 @@ public class GamePanel extends BackgroundPanel {
         }
         gameTimer.stop();
         victory = true;
+        soundManager.stopBackgroundMusic();
+        soundManager.playWin();
         saveCurrentGameToDatabase();
         repaint();
     }
