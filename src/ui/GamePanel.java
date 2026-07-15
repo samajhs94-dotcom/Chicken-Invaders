@@ -4,6 +4,7 @@ import enemy.*;
 import main.GameMain;
 import manager.DatabaseManager;
 import manager.LevelManager;
+import manager.SoundManager;
 import model.*;
 
 import javax.swing.*;
@@ -42,6 +43,7 @@ public class GamePanel extends BackgroundPanel {
 
     private LevelManager levelManager ;
     private boolean levelFinished = false;
+    private long levelFinishTime = 0;
     private Level currentLevel;
 
     private long lastEggDropTime = 0;
@@ -62,11 +64,30 @@ public class GamePanel extends BackgroundPanel {
     private ArrayList<BossBullet> bossBullets = new ArrayList<>();
 
     private boolean paused = false;
+    private long pauseStartTime = 0;
 
     private GameMain gameMain;
 
+    private ArrayList<PowerUp> powerUps = new ArrayList<>();
 
-    public GamePanel(DatabaseManager dbManager,GameMain gameMain) {
+    private static final double POWER_UP_DROP_CHANCE = 0.20;
+
+    private static final long RAPID_FIRE_DURATION = 8000;
+    private static final long SHIELD_DURATION = 10000;
+    private static final long FREEZE_DURATION = 3000;
+
+    private static final int RAPID_FIRE_RATE = 100;
+
+    private long rapidFireEndTime = 0;
+    private long shieldEndTime = 0;
+    private long freezeEndTime = 0;
+
+    private SoundManager soundManager;
+
+    private ArrayList<Explosion> explosions = new ArrayList<>();
+
+
+    public GamePanel(DatabaseManager dbManager,GameMain gameMain,SoundManager soundManager) {
 
         super("src/resources/images/1.png");
 
@@ -77,6 +98,7 @@ public class GamePanel extends BackgroundPanel {
         this.gameMain = gameMain;
 
         this.dbManager = dbManager;
+        this.soundManager = soundManager;
 
         levelManager = new LevelManager();
         currentLevel = levelManager.getCurrentLevel();
@@ -120,9 +142,11 @@ public class GamePanel extends BackgroundPanel {
         gameOver = false;
         victory = false;
         levelFinished = false;
+        levelFinishTime = 0;
 
         //اگه موقع خروج از بازی کلیدی نگه داشته شده باشه اثرش تو بازی جدید نمونه
         paused = false;
+        pauseStartTime = 0;
         leftPressed = false;
         rightPressed = false;
         upPressed = false;
@@ -134,10 +158,19 @@ public class GamePanel extends BackgroundPanel {
         eggs.clear();
         enemyBullets.clear();
         bossBullets.clear();
+        powerUps.clear();
+        explosions.clear();
         boss = null;
 
         lastShotTime = 0;
         lastEggDropTime = 0;
+
+        rapidFireEndTime = 0;
+        shieldEndTime = 0;
+        freezeEndTime = 0;
+
+        plane.setRapidFire(false);
+        plane.setShield(false);
 
         if (gameTimer != null) {
             gameTimer.stop();
@@ -147,6 +180,13 @@ public class GamePanel extends BackgroundPanel {
 
 
     private void startCurrentLevel() {
+
+        // پاک کردن اشیای مرحله قبلی
+        bullets.clear();
+        eggs.clear();
+        enemyBullets.clear();
+        explosions.clear();
+        bossBullets.clear();
 
         formationOffsetX = 0;
         direction = 1;
@@ -175,6 +215,55 @@ public class GamePanel extends BackgroundPanel {
             createEnemies();
 
         }
+    }
+
+    private void togglePause() {
+
+        // بعد از پایان بازی امکان توقف و ادامه وجود نداره
+        if (gameOver || victory) {
+            return;
+        }
+
+        if (!paused) {
+
+            paused = true;
+            pauseStartTime = System.currentTimeMillis();
+
+            // آزاد کردن کلیدهای حرکتی
+            leftPressed = false;
+            rightPressed = false;
+            upPressed = false;
+            downPressed = false;
+
+            gameTimer.stop();
+
+        } else {
+
+            long now = System.currentTimeMillis();
+            long pauseDuration = now - pauseStartTime;
+
+            // حفظ زمان باقی‌مانده پاورآپ‌ها
+            if (plane.isRapidFire()) {
+                rapidFireEndTime += pauseDuration;
+            }
+
+            if (plane.hasShield()) {
+                shieldEndTime += pauseDuration;
+            }
+
+            if (freezeEndTime > pauseStartTime) {
+                freezeEndTime += pauseDuration;
+            }
+
+            // حفظ زمان شلیک هواپیما و تخم‌اندازی مرغ‌ها
+            lastShotTime += pauseDuration;
+            lastEggDropTime += pauseDuration;
+
+            paused = false;
+            gameTimer.start();
+        }
+
+        repaint();
     }
 
     private void createEnemies() {
@@ -239,8 +328,11 @@ public class GamePanel extends BackgroundPanel {
             plane.moveDown();
 
         updateInvincibility();
+        updatePowerUpTimers();
 
         updateBullets();
+        updatePowerUps();
+        updateExplosions();
 
         if (currentLevel.isBossLevel()) {
             updateBossLevel();
@@ -255,46 +347,55 @@ public class GamePanel extends BackgroundPanel {
 
     private void updateNormalLevel() {
 
-        moveEnemies();
+        if(!isFreezeActive()) {
 
-        if (anyEnemyReachedBottom()) {
-            gameOver();
-            return;
+            moveEnemies();
+
+            if (anyEnemyReachedBottom()) {
+                gameOver();
+                return;
+            }
+
+            handleEggDrop();
+            updateZigzagEggAnimations();
+
+            handleShooterAttack();
+            updateEnemyBullets();
+
+            updateEggs();
         }
 
-        handleEggDrop();
-        updateZigzagEggAnimations();
-
-        handleShooterAttack();
-        updateEnemyBullets();
-
-        updateEggs();
         checkEnemyPlaneCollision();
         checkBulletEnemyCollision();
+
     }
 
     private void updateBossLevel() {
 
         if (boss == null) return;
 
-        boss.move(GameMain.WINDOW_WIDTH);
-        bossBullets.addAll(boss.tryAttack());
+        if(!isFreezeActive()) {
 
-        Iterator<BossBullet> it = bossBullets.iterator();
-        Rectangle planeRect = new Rectangle(plane.getX(), plane.getY(), plane.getWidth(), plane.getHeight());
+            boss.move(GameMain.WINDOW_WIDTH);
+            bossBullets.addAll(boss.tryAttack());
 
-        while (it.hasNext()) {
-            BossBullet b = it.next();
-            b.move();
+            Iterator<BossBullet> it = bossBullets.iterator();
+            Rectangle planeRect = new Rectangle(plane.getX(), plane.getY(), plane.getWidth(), plane.getHeight());
 
-            if (b.isOutOfScreen(GameMain.WINDOW_WIDTH, GameMain.WINDOW_HEIGHT)) {
-                it.remove();
-                continue;
+            while (it.hasNext()) {
+                BossBullet b = it.next();
+                b.move();
+
+                if (b.isOutOfScreen(GameMain.WINDOW_WIDTH, GameMain.WINDOW_HEIGHT)) {
+                    it.remove();
+                    continue;
+                }
+                if (b.getBounds().intersects(planeRect)) {
+                    handlePlayerHit();
+                    it.remove();
+                }
             }
-            if (b.getBounds().intersects(planeRect)) {
-                handlePlayerHit();
-                it.remove();
-            }
+
         }
 
         checkBulletBossCollision();
@@ -324,6 +425,11 @@ public class GamePanel extends BackgroundPanel {
             @Override
             public void keyPressed(KeyEvent e) {
 
+                if (paused && e.getKeyCode() != KeyEvent.VK_P &&
+                        e.getKeyCode() != KeyEvent.VK_ESCAPE) {
+                    return;
+                }
+
                 switch (e.getKeyCode()) {
 
                     case KeyEvent.VK_LEFT:
@@ -347,17 +453,13 @@ public class GamePanel extends BackgroundPanel {
                         break;
 
                     case KeyEvent.VK_SPACE://چون یه عمل لحظه ایه و نه پیوسته مثل بقیه کلید ها
-                        shoot();
+                        if (!gameOver && !victory) {
+                            shoot();
+                        }
                         break;
 
                     case KeyEvent.VK_P:
-                        paused = !paused;
-                        if (paused) {
-                            gameTimer.stop();
-                        } else {
-                            gameTimer.start();
-                        }
-                        repaint();
+                        togglePause();
                         break;
 
                     case KeyEvent.VK_ESCAPE:
@@ -430,6 +532,14 @@ public class GamePanel extends BackgroundPanel {
             b.draw(g);
         }
 
+        for (PowerUp powerUp : powerUps) {
+            powerUp.draw(g);
+        }
+
+        for (Explosion explosion : explosions) {
+            explosion.draw(g);
+        }
+
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial",Font.BOLD,18));
         g.drawString("Lives:",20,30);
@@ -448,15 +558,34 @@ public class GamePanel extends BackgroundPanel {
 
         g.drawString("Fire : " + plane.getBulletCount(),20,150);
 
+        drawPowerUpStatus(g);
+
         pausedGame(g);
 
         if (gameOver) {
             drawOverlay(g, "!! GAME OVER !!", Color.RED);
+            drawEscapeMessage(g);
+
         }
 
         if (victory) {
             drawOverlay(g, " YOU WON :)", Color.GREEN);
+            drawEscapeMessage(g);
+
         }
+
+    }
+
+    private void drawEscapeMessage(Graphics g) {
+
+        Graphics2D g2 = (Graphics2D) g;
+        String message = "Press ESC to return to the main menu";
+        g2.setFont(new Font("Arial", Font.BOLD, 20));
+        g2.setColor(Color.WHITE);
+        FontMetrics fontMetrics = g2.getFontMetrics();
+        int x = (getWidth() - fontMetrics.stringWidth(message)) / 2;
+        int y = getHeight() / 2 + 70;
+        g2.drawString(message, x, y);
 
     }
 
@@ -511,15 +640,163 @@ public class GamePanel extends BackgroundPanel {
 
         long currentTime = System.currentTimeMillis();
 
-        if(currentTime-lastShotTime<plane.getFireRate())
+        int currentFireRate;
+        if (plane.isRapidFire()) {
+            currentFireRate = RAPID_FIRE_RATE;
+        } else {
+            currentFireRate = plane.getFireRate();
+        }
+
+        if(currentTime-lastShotTime < currentFireRate)
             return;
 
-        bullets.add( new Bullet ( plane.getX()+plane.getWidth()/2-16, plane.getY()));
+        int bulletCount = plane.getBulletCount();
+        int spacing = 18;
 
+        //مرکز هواپیما، نصف عرض گلوله و تنظیم بر اساس تعداد تیرها
+        int startX = plane.getX() + plane.getWidth() / 2 - 16
+                - ((bulletCount - 1) * spacing) / 2;
+
+        for (int i = 0; i < bulletCount; i++) {
+            bullets.add(new Bullet(startX + i * spacing, plane.getY()));
+        }
+        soundManager.playShot();
         lastShotTime=currentTime;
 
     }
 
+    //حرکت پاوراپ ها، بررسی خروج از صفحه و برخورد با هواپیما
+    private void updatePowerUps() {
+
+        Iterator<PowerUp> it = powerUps.iterator();
+
+        Rectangle planeRect = new Rectangle(plane.getX(),
+                plane.getY(), plane.getWidth(), plane.getHeight());
+
+        while (it.hasNext()) {
+
+            PowerUp powerUp = it.next();
+            powerUp.move();
+
+            if (powerUp.isOutOfScreen(GameMain.WINDOW_HEIGHT)) {
+                it.remove();
+                continue;
+            }
+
+            if (powerUp.getBounds().intersects(planeRect)) {
+                applyPowerUp(powerUp);
+                it.remove();
+            }
+        }
+    }
+
+    //اعمال اثر پاوراپ
+    private void applyPowerUp(PowerUp powerUp) {
+
+        long now = System.currentTimeMillis();
+
+        switch (powerUp.getType()) {
+
+            case FIRE_ADD:
+                if(plane.getBulletCount()<Plane.MAX_BULLET_COUNT) {
+                    plane.setBulletCount(plane.getBulletCount() + 1);
+                }
+                break;
+
+            case RAPID_FIRE:
+                plane.setRapidFire(true);
+                rapidFireEndTime = now + RAPID_FIRE_DURATION;
+                break;
+
+            case EXTRA_LIFE:
+                if (plane.getLives() < Plane.MAX_LIVES) {
+                    plane.setLives(plane.getLives() + 1);
+                }
+                break;
+
+            case SHIELD:
+                plane.setShield(true);
+                shieldEndTime = now + SHIELD_DURATION;
+                break;
+
+            case FREEZE_BOMB:
+                freezeEndTime = now + FREEZE_DURATION;
+                break;
+
+        }
+
+    }
+
+    //چک کردن تموم شدن تایم پاوراپ های موقت
+    private void updatePowerUpTimers() {
+
+        long now = System.currentTimeMillis();
+
+        if (plane.isRapidFire() && now > rapidFireEndTime) {
+            plane.setRapidFire(false);
+        }
+
+        if (plane.hasShield() && now > shieldEndTime) {
+            plane.setShield(false);
+        }
+
+    }
+
+    private boolean isFreezeActive() {
+        return System.currentTimeMillis() < freezeEndTime;
+    }
+
+    // وقتی دشمن میمیره با احتمال 20 درصد ساخت پاوراپ
+    private void trySpawnPowerUp(int x, int y) {
+
+        if (Math.random() > POWER_UP_DROP_CHANCE) {
+            return;
+        }
+
+        PowerUp.Type randomType = PowerUp.getRandomType();
+
+        powerUps.add(new PowerUp(x, y, randomType));
+    }
+
+    private void drawPowerUpStatus(Graphics g) {
+
+        long now = System.currentTimeMillis();
+        int y = 180;
+
+        if (plane.isRapidFire()) {
+            g.drawString("Rapid: " + Math.max(0, (rapidFireEndTime - now) / 1000) + "s", 20, y);
+            y += 30;
+        }
+
+        if (plane.hasShield()) {
+            g.drawString("Shield: " + Math.max(0, (shieldEndTime - now) / 1000) + "s", 20, y);
+            y += 30;
+        }
+
+        if (isFreezeActive()) {
+            g.drawString("Freeze: " + Math.max(0, (freezeEndTime - now) / 1000) + "s", 20, y);
+        }
+    }
+
+    private void updateExplosions() {
+
+        Iterator<Explosion> it = explosions.iterator();
+
+        while (it.hasNext()) {
+            Explosion explosion = it.next();
+
+            explosion.update();
+
+            if (explosion.isFinished()) {
+                it.remove();
+            }
+        }
+    }
+
+    private void addExplosion(int x, int y) {
+        explosions.add(new Explosion(x, y));
+        soundManager.playExplosion();
+    }
 
     //بررسی اینکه ایا گلوله به دشمن برخورد کرده یا نه
     private void checkBulletEnemyCollision() {
@@ -544,6 +821,13 @@ public class GamePanel extends BackgroundPanel {
 
                         Cell cell = findCell(enemy);
                         enemyIterator.remove();
+
+                        addExplosion(enemy.getX() + enemy.getWidth() / 2,
+                                enemy.getY() + enemy.getHeight() / 2);
+
+                        //ساخت پاوراپ با احتمال 20 درصد
+                        trySpawnPowerUp(enemy.getX() + enemy.getWidth() / 2 - 20,
+                                enemy.getY() + enemy.getHeight() / 2 - 20);
 
                         if (cell != null) {
 
@@ -589,8 +873,10 @@ public class GamePanel extends BackgroundPanel {
                 // برخورد گلوله به غول
                 if (boss.isDead()) {
 
-                    // مرگ غول
+                    addExplosion(boss.getX() + boss.getWidth() / 2,
+                            boss.getY() + boss.getHeight() / 2);
 
+                    // مرگ غول
                     if (currentLevel.getLevelNumber() == 4) {
                         score += 500;
                     } else {
@@ -735,8 +1021,14 @@ public class GamePanel extends BackgroundPanel {
     //کم شدن جون
     private void handlePlayerHit() {
 
+        if (plane.hasShield())
+            return;
+
         if (plane.isInvincible())
             return;
+
+        addExplosion(plane.getX() + plane.getWidth() / 2,
+                plane.getY() + plane.getHeight() / 2);
 
         plane.setLives(plane.getLives() - 1);
 
@@ -771,6 +1063,8 @@ public class GamePanel extends BackgroundPanel {
         }
         gameTimer.stop();
         gameOver = true;
+        soundManager.stopBackgroundMusic();
+        soundManager.playGameOver();
         saveCurrentGameToDatabase();
         repaint();
 
@@ -782,6 +1076,8 @@ public class GamePanel extends BackgroundPanel {
         }
         gameTimer.stop();
         victory = true;
+        soundManager.stopBackgroundMusic();
+        soundManager.playWin();
         saveCurrentGameToDatabase();
         repaint();
     }
@@ -963,6 +1259,18 @@ public class GamePanel extends BackgroundPanel {
 
         if (finished && !levelFinished) {
 
+            // اولین بار زمان پایان مرحله ثبت می‌شود
+            if (levelFinishTime == 0) {
+                levelFinishTime = System.currentTimeMillis();
+                return;
+            }
+
+            // نیم ثانیه برای نمایش انفجار صبر می‌کنیم
+            if (System.currentTimeMillis() - levelFinishTime < 500) {
+                return;
+            }
+
+            levelFinishTime = 0;
             levelFinished = true;
 
             if (!currentLevel.isBossLevel()) {

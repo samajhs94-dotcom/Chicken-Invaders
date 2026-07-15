@@ -17,10 +17,11 @@ public abstract class Boss {
     protected long lastAttackTime = 0;
     protected long attackInterval;
     protected int directions;
+    protected double bulletSpeed;
     protected Image image;
 
     public Boss(int x, int y, int maxHealth, double horizontalSpeed,
-                long attackInterval, int directions, Image image) {
+                long attackInterval, int directions,double bulletSpeed, Image image) {
 
         this.x = x;
         this.y = y;
@@ -29,6 +30,7 @@ public abstract class Boss {
         this.horizontalSpeed = horizontalSpeed;
         this.attackInterval = attackInterval;
         this.directions = directions;
+        this.bulletSpeed = bulletSpeed;
         this.image = image;
 
     }
@@ -49,7 +51,7 @@ public abstract class Boss {
             double cy = y + height / 2.0;
 
             for (int i = 0; i < directions; i++) {
-                newBullets.add(new BossBullet(cx, cy, i * step, 5));
+                newBullets.add(new BossBullet(cx, cy, i * step, bulletSpeed));
             }
         }
 

@@ -1,10 +1,8 @@
 package main;
 import manager.DatabaseManager;
 import model.User;
-import ui.GamePanel;
-import ui.LoginPanel;
-import ui.MainMenu;
-import ui.RegisterPanel;
+import ui.*;
+import manager.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,6 +19,8 @@ public class GameMain extends JFrame {
     private MainMenu mainMenu;
     private LoginPanel loginPanel;
     private RegisterPanel registerPanel;
+    private SoundManager soundManager;
+    private SettingsPanel settingsPanel;
 
     private GamePanel gamePanel;
 
@@ -33,10 +33,12 @@ public class GameMain extends JFrame {
         }
 
         db.createTables();
+        soundManager = new SoundManager();
 
         initializeFrame();
         initializePanels();
         setVisible(true);
+        soundManager.playBackgroundMusic();
 
     }
 
@@ -51,7 +53,7 @@ public class GameMain extends JFrame {
         mainPanel = new JPanel(cardLayout);
         add(mainPanel);
 
-        gamePanel = new GamePanel(db,this);
+        gamePanel = new GamePanel(db,this,soundManager);
         mainPanel.add(gamePanel,"GAME");
 
     }
@@ -63,15 +65,19 @@ public class GameMain extends JFrame {
         mainMenu = new MainMenu(this);
         loginPanel = new LoginPanel(this,db);
         registerPanel = new RegisterPanel(this,db);
+        settingsPanel = new SettingsPanel(this, db, soundManager);
         mainPanel.add(mainMenu,"MENU");
         mainPanel.add(loginPanel,"LOGIN");
         mainPanel.add(registerPanel,"REGISTER");
+        mainPanel.add(settingsPanel, "SETTINGS");
         cardLayout.show(mainPanel,"MENU");//اولین صفحه
     }
 
     //جابه جایی بین صفحات
     public void showMainMenu() {
         gamePanel.stopGame();
+        soundManager.stopEndSounds();
+        soundManager.playBackgroundMusic();
         cardLayout.show(mainPanel,"MENU");
     }
 
@@ -92,6 +98,11 @@ public class GameMain extends JFrame {
 
     public void showSettingsPanel() {
         gamePanel.stopGame();
+        if (currentUser == null) {
+            showLoginPanel();
+            return;
+        }
+        settingsPanel.loadSettings(currentUser);
         cardLayout.show(mainPanel, "SETTINGS");
     }
 
@@ -103,6 +114,7 @@ public class GameMain extends JFrame {
     public void showGamePanel() {
         cardLayout.show(mainPanel, "GAME");
         gamePanel.setCurrentUser(currentUser);
+        soundManager.playBackgroundMusic();
         gamePanel.startGame();
     }
 
@@ -113,7 +125,16 @@ public class GameMain extends JFrame {
     }
 
     public void setCurrentUser(User currentUser) {
+
         this.currentUser = currentUser;
+
+        if (currentUser != null) {
+            soundManager.setSoundSettings(currentUser.getMusicEnabled(),
+                    currentUser.getShotSoundEnabled(),
+                    currentUser.getExplosionSoundEnabled(),
+                    currentUser.getGameOverSoundEnabled());
+        }
+
     }
 
     public DatabaseManager getDb() {
