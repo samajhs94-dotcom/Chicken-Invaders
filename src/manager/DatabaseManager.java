@@ -1,6 +1,7 @@
 package manager;
 import model.User;
 import java.sql.*;
+import java.util.ArrayList;
 
 public class DatabaseManager {
 
@@ -258,6 +259,52 @@ public class DatabaseManager {
         }
     }
 
+    public ArrayList<Object[]> getHighScores() {
+
+        ArrayList<Object[]> scores = new ArrayList<>();
+        ArrayList<Integer> addedUserIds = new ArrayList<>();
+
+        String sql = "SELECT users.id, users.username, game_history.score, "
+                + "game_history.level, game_history.game_date "
+                + "FROM game_history "
+                + "JOIN users ON users.id = game_history.user_id "
+                + "ORDER BY game_history.score DESC, game_history.id DESC";
+
+        try {
+
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(sql);
+
+            while (resultSet.next()) {
+
+                int userId = resultSet.getInt("id");
+
+                // از هر کاربر فقط بالاترین امتیاز نمایش داده می‌شود
+                if (addedUserIds.contains(userId)) {
+                    continue;
+                }
+
+                addedUserIds.add(userId);
+
+                Object[] scoreData = {
+                        resultSet.getString("username"),
+                        resultSet.getInt("score"),
+                        resultSet.getInt("level"),
+                        resultSet.getString("game_date")
+                };
+
+                scores.add(scoreData);
+            }
+
+            resultSet.close();
+            statement.close();
+
+        } catch (SQLException e) {
+            System.out.println("High scores error: " + e.getMessage());
+        }
+
+        return scores;
+    }
 
 }
 

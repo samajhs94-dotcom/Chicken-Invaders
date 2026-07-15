@@ -99,8 +99,6 @@ public class MainMenu extends BackgroundPanel{
         highScoreButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
-                JOptionPane.showMessageDialog(MainMenu.this, "High Scores Panel");
                 frame.showHighScorePanel();
             }
         });

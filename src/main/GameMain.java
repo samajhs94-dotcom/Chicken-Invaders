@@ -21,6 +21,7 @@ public class GameMain extends JFrame {
     private RegisterPanel registerPanel;
     private SoundManager soundManager;
     private SettingsPanel settingsPanel;
+    private HighScorePanel highScorePanel;
 
     private GamePanel gamePanel;
 
@@ -66,11 +67,16 @@ public class GameMain extends JFrame {
         loginPanel = new LoginPanel(this,db);
         registerPanel = new RegisterPanel(this,db);
         settingsPanel = new SettingsPanel(this, db, soundManager);
+        highScorePanel = new HighScorePanel(this, db);
+
         mainPanel.add(mainMenu,"MENU");
         mainPanel.add(loginPanel,"LOGIN");
         mainPanel.add(registerPanel,"REGISTER");
         mainPanel.add(settingsPanel, "SETTINGS");
+        mainPanel.add(highScorePanel, "HIGHSCORE");
+
         cardLayout.show(mainPanel,"MENU");//اولین صفحه
+
     }
 
     //جابه جایی بین صفحات
@@ -93,6 +99,7 @@ public class GameMain extends JFrame {
 
     public void showHighScorePanel() {
         gamePanel.stopGame();
+        highScorePanel.loadScores();
         cardLayout.show(mainPanel, "HIGHSCORE");
     }
 
