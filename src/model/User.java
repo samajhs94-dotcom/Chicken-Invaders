@@ -11,12 +11,14 @@ public class User {
     private boolean explosionSoundEnabled;
     private boolean gameOverSoundEnabled;
     private int id;
+    private int selectedPlane;
 
     public User(String userName,String password){
         this.userName=userName;
         this.password=password;
         highScore=0;
         lastLevel=1;
+        selectedPlane = 1;
         musicEnabled=true;
         shotSoundEnabled=true;
         explosionSoundEnabled=true;
@@ -59,6 +61,9 @@ public class User {
     public boolean getGameOverSoundEnabled() {
         return gameOverSoundEnabled;
     }
+    public int getSelectedPlane() {
+        return selectedPlane;
+    }
     //ستر ها
     public void setPassword(String password) {
         this.password = password;
@@ -81,7 +86,9 @@ public class User {
     public void setGameOverSoundEnabled(boolean gameOverSoundEnabled) {
         this.gameOverSoundEnabled = gameOverSoundEnabled;
     }
-
+    public void setSelectedPlane(int selectedPlane) {
+        this.selectedPlane = selectedPlane;
+    }
     public void setId(int id){
         this.id=id;
     }

@@ -92,7 +92,7 @@ public class GamePanel extends BackgroundPanel {
         super("src/resources/images/1.png");
 
         heartImage = new ImageIcon("src/resources/images/heart.png").getImage();
-        // فعلا باشه تا اوکیش کنم
+
         score = 0;
 
         this.gameMain = gameMain;
@@ -152,7 +152,11 @@ public class GamePanel extends BackgroundPanel {
         upPressed = false;
         downPressed = false;
 
-        plane = new Plane((GameMain.WINDOW_WIDTH - 75) / 2, 400, 1);
+        int selectedPlane = 1;
+        if (currentUser != null) {
+            selectedPlane = currentUser.getSelectedPlane();
+        }
+        plane = new Plane((GameMain.WINDOW_WIDTH - 75) / 2, 400, selectedPlane);
 
         bullets.clear();
         eggs.clear();
@@ -188,6 +192,9 @@ public class GamePanel extends BackgroundPanel {
         explosions.clear();
         bossBullets.clear();
 
+        //مرغ ها در لحظه ورود به مرحله جدید فوری تخم نندازن
+        lastEggDropTime = System.currentTimeMillis();
+
         formationOffsetX = 0;
         direction = 1;
         Arrays.fill(rowOffsetsY, 0);
@@ -202,7 +209,7 @@ public class GamePanel extends BackgroundPanel {
             if (currentLevel.getLevelNumber() == 4) {
                 boss = new BossLevel4(startX, 60);
             } else {
-                boss = new BossLevel8(startX, 40);
+                boss = new BossLevel8(startX-25, 40);
             }
 
             bossBullets.clear();
@@ -259,6 +266,9 @@ public class GamePanel extends BackgroundPanel {
             lastShotTime += pauseDuration;
             lastEggDropTime += pauseDuration;
 
+            // حفظ زمان آسیب‌ناپذیری هواپیما
+            plane.addInvinciblePauseTime(pauseDuration);
+
             paused = false;
             gameTimer.start();
         }
@@ -277,7 +287,8 @@ public class GamePanel extends BackgroundPanel {
             for (int c = 0; c < grid[r].length; c++) {
 
                 Cell cell = grid[r][c];
-                Enemy enemy = cell.createEnemy(currentLevel);                cell.setEnemy(enemy);
+                Enemy enemy = cell.createEnemy(currentLevel);
+                cell.setEnemy(enemy);
                 enemies.add(enemy);
 
             }
@@ -338,6 +349,10 @@ public class GamePanel extends BackgroundPanel {
             updateBossLevel();
         } else {
             updateNormalLevel();
+        }
+
+        if (gameOver || victory) {
+            return;
         }
 
         checkLevelCompletion();
@@ -868,6 +883,12 @@ public class GamePanel extends BackgroundPanel {
             if (bullet.getBounds().intersects(boss.getBounds())) {
 
                 boss.takeDamage();
+
+                // هواپیمای اسنایپر به غول دو برابر آسیب می‌زند
+                if (plane.getType() == 3) {
+                    boss.takeDamage();
+                }
+
                 it.remove();
 
                 // برخورد گلوله به غول

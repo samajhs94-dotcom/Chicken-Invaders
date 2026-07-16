@@ -74,7 +74,7 @@ public class Plane {
                 speed = 5;
                 lives = 3;
                 fireRate = 300;
-                image = new ImageIcon("src/resources/images/DefaultPlane.png").getImage();
+                image = new ImageIcon("src/resources/images/defaultPlane.png").getImage();
         }
 
         createShieldGlow();
@@ -242,5 +242,14 @@ public class Plane {
 
         return ((now / 200) % 2) == 0;
     }
+
+    // اگر هواپیما آسیب‌ناپذیر است زمان پاز را به زمان شروع اضافه می‌کنیم
+    public void addInvinciblePauseTime(long pauseDuration) {
+
+        if (invincible) {
+            invincibleStartTime += pauseDuration;
+        }
+    }
+
 
 }

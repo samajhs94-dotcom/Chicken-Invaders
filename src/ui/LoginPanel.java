@@ -36,17 +36,23 @@ public class LoginPanel extends BackgroundPanel{
 
         JLabel title = new JLabel("LOGIN");
         title.setFont(new Font("Arial", Font.BOLD, 30));
-        title.setForeground(Color.WHITE);
+        title.setForeground(new Color(255, 200, 0));
         JLabel userLabel = new JLabel("Username");
-        userLabel.setForeground(Color.WHITE);
+        userLabel.setForeground(new Color(255, 200, 0));
         JLabel passLabel = new JLabel("Password");
-        passLabel.setForeground(Color.WHITE);
+        passLabel.setForeground(new Color(255, 200, 0));
 
         usernameField = new JTextField(15);
         passwordField = new JPasswordField(15);
         loginButton = new JButton("Login");
         registerButton = new JButton("Register");
         backButton = new JButton("Back");
+
+        styleField(usernameField);
+        styleField(passwordField);
+        styleButton(loginButton);
+        styleButton(registerButton);
+        styleButton(backButton);
 
         //اندازه دکمه ها
         Dimension buttonSize = new Dimension(120, 30);
@@ -79,6 +85,32 @@ public class LoginPanel extends BackgroundPanel{
         add(registerButton, gbc);
         gbc.gridy++;
         add(backButton, gbc);
+
+    }
+
+    private void styleButton(JButton button) {
+
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setForeground(new Color(255, 200, 0));
+        button.setBackground(new Color(30, 30, 35));
+        button.setFocusPainted(false);
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+
+        button.setBorder(BorderFactory.createLineBorder(new Color(255, 200, 0), 2));
+
+    }
+
+    private void styleField(JTextField field) {
+
+        field.setFont(new Font("Arial", Font.PLAIN, 14));
+        field.setForeground(Color.WHITE);
+        field.setBackground(new Color(30, 30, 35));
+        field.setCaretColor(Color.WHITE);
+        field.setSelectionColor(new Color(255, 200, 0));
+        field.setSelectedTextColor(Color.BLACK);
+
+        field.setBorder(BorderFactory.createLineBorder(new Color(255, 200, 0), 2));
 
     }
 

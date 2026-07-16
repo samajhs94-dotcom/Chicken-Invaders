@@ -6,6 +6,8 @@ import manager.*;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class GameMain extends JFrame {
 
@@ -22,6 +24,8 @@ public class GameMain extends JFrame {
     private SoundManager soundManager;
     private SettingsPanel settingsPanel;
     private HighScorePanel highScorePanel;
+    private HowToPlayPanel howToPlayPanel;
+    private StorePanel storePanel;
 
     private GamePanel gamePanel;
 
@@ -48,7 +52,15 @@ public class GameMain extends JFrame {
         setTitle("Chicken Invaders");
         setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         setLocationRelativeTo(null);//پنجره وسط صفجه باز شه
+
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                db.close();
+            }
+        });
+
         setResizable(false);//کاربر نتونه سایز پنجره رو تغییر بده
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
@@ -68,12 +80,16 @@ public class GameMain extends JFrame {
         registerPanel = new RegisterPanel(this,db);
         settingsPanel = new SettingsPanel(this, db, soundManager);
         highScorePanel = new HighScorePanel(this, db);
+        howToPlayPanel = new HowToPlayPanel(this);
+        storePanel = new StorePanel(this, db);
 
         mainPanel.add(mainMenu,"MENU");
         mainPanel.add(loginPanel,"LOGIN");
         mainPanel.add(registerPanel,"REGISTER");
         mainPanel.add(settingsPanel, "SETTINGS");
         mainPanel.add(highScorePanel, "HIGHSCORE");
+        mainPanel.add(howToPlayPanel, "HOWTOPLAY");
+        mainPanel.add(storePanel, "STORE");
 
         cardLayout.show(mainPanel,"MENU");//اولین صفحه
 
@@ -123,6 +139,18 @@ public class GameMain extends JFrame {
         gamePanel.setCurrentUser(currentUser);
         soundManager.playBackgroundMusic();
         gamePanel.startGame();
+    }
+
+    public void showStorePanel() {
+
+        gamePanel.stopGame();
+        if (currentUser == null) {
+            showLoginPanel();
+            return;
+        }
+        storePanel.loadStore();
+        cardLayout.show(mainPanel, "STORE");
+
     }
 
 

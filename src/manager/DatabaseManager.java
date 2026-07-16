@@ -28,6 +28,7 @@ public class DatabaseManager {
                 + "password TEXT NOT NULL, "
                 + "high_score INTEGER DEFAULT 0, "
                 + "last_level INTEGER DEFAULT 1, "
+                + "selected_plane INTEGER DEFAULT 1, "
                 + "music_enabled BOOLEAN DEFAULT TRUE, "
                 + "shot_sound_enabled BOOLEAN DEFAULT TRUE, "
                 + "explosion_sound_enabled BOOLEAN DEFAULT TRUE, "
@@ -61,11 +62,18 @@ public class DatabaseManager {
 
     }
 
+    /*
+    برای اضافه کردن یه ستون جدید چون دیتابیسم هیچ اطلاعات خاصی نداره و برام مهم نیست پاک کردنش
+    بدون دستور اضافه برای اپدیت کردنش یعنی دستور
+     "ALTER TABLE users ADD COLUMN selected_plane INTEGER DEFAULT 1"
+     اوکیش کردم.
+     */
+
     public void registerUser(User user) throws SQLException {
 
-        String sql = "INSERT INTO users(username,password,high_score,last_level,music_enabled,"
-                + "shot_sound_enabled,explosion_sound_enabled,game_over_sound_enabled)"
-                + " VALUES(?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO users(username,password,high_score,last_level,selected_plane," +
+                "music_enabled, shot_sound_enabled,explosion_sound_enabled,game_over_sound_enabled)"
+                + " VALUES(?,?,?,?,?,?,?,?,?)";
 
         String username = user.getUsername();
 
@@ -83,10 +91,11 @@ public class DatabaseManager {
         ps.setString(2, user.getPassword());
         ps.setInt(3, 0);
         ps.setInt(4, 1);
-        ps.setBoolean(5, user.getMusicEnabled());
-        ps.setBoolean(6, user.getShotSoundEnabled());
-        ps.setBoolean(7, user.getExplosionSoundEnabled());
-        ps.setBoolean(8, user.getGameOverSoundEnabled());
+        ps.setInt(5, user.getSelectedPlane());
+        ps.setBoolean(6, user.getMusicEnabled());
+        ps.setBoolean(7, user.getShotSoundEnabled());
+        ps.setBoolean(8, user.getExplosionSoundEnabled());
+        ps.setBoolean(9, user.getGameOverSoundEnabled());
 
         ps.executeUpdate();
 
@@ -101,6 +110,7 @@ public class DatabaseManager {
 
         user.setHighScore(0);
         user.setLastLevel(1);
+        user.setSelectedPlane(1);
     }
 
     public User login(String username, String password) throws SQLException {
@@ -119,6 +129,7 @@ public class DatabaseManager {
             user.setId(rs.getInt("id"));
             user.setHighScore(rs.getInt("high_score"));
             user.setLastLevel(rs.getInt("last_level"));
+            user.setSelectedPlane(rs.getInt("selected_plane"));
             user.setMusicEnabled(rs.getBoolean("music_enabled"));
             user.setShotSoundEnabled(rs.getBoolean("shot_sound_enabled"));
             user.setExplosionSoundEnabled(rs.getBoolean("explosion_sound_enabled"));
@@ -304,6 +315,31 @@ public class DatabaseManager {
         }
 
         return scores;
+    }
+
+    //متد ذخیره هواپیمای انتخابی
+    public void updateSelectedPlane(User user, int selectedPlane) {
+
+        if (user == null) {
+            return;
+        }
+
+        String sql = "UPDATE users SET selected_plane=? WHERE id=?";
+
+        try {
+
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.setInt(1, selectedPlane);
+            ps.setInt(2, user.getId());
+            ps.executeUpdate();
+            ps.close();
+
+            // به‌روزرسانی کاربر فعلی برنامه
+            user.setSelectedPlane(selectedPlane);
+
+        } catch (SQLException e) {
+            System.out.println("Update selected plane error: " + e.getMessage());
+        }
     }
 
 }

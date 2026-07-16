@@ -32,6 +32,7 @@ public abstract class Boss {
         this.directions = directions;
         this.bulletSpeed = bulletSpeed;
         this.image = image;
+        lastAttackTime = System.currentTimeMillis();
 
     }
 
