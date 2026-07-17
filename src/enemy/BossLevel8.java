@@ -57,7 +57,7 @@ public class BossLevel8 extends Boss{
 
         // حرکت عمودی در محدوده‌ی ۱۰۰ پیکسل
         verticalPhase += 0.015;
-        y = baseY + (Math.sin(verticalPhase+1)) * 50;
+        y = baseY + (Math.sin(verticalPhase)+1) * 50;
     }
 
 }

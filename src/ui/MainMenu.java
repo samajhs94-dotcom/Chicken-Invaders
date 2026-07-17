@@ -17,6 +17,7 @@ public class MainMenu extends BackgroundPanel{
     private JButton howToPlayButton;
     private JButton exitButton;
     private JLabel messageLabel;
+    private JButton storeButton;
 
     public MainMenu(GameMain frame){
         super("src/resources/images/FirstBackground.png");
@@ -33,7 +34,7 @@ public class MainMenu extends BackgroundPanel{
 
         JLabel title = new JLabel("CHICKEN INVADERS");
         title.setFont(new Font("Arial", Font.BOLD, 36));
-        title.setForeground(Color.WHITE);
+        title.setForeground(new Color(255, 200, 0));
 
         messageLabel = new JLabel(" ");
         messageLabel.setForeground(Color.RED);
@@ -45,14 +46,24 @@ public class MainMenu extends BackgroundPanel{
         settingsButton = new JButton("Settings");
         howToPlayButton = new JButton("How To Play");
         exitButton = new JButton("Exit");
+        storeButton = new JButton("Store");
+
+        styleButton(newGameButton);
+        styleButton(highScoreButton);
+        styleButton(settingsButton);
+        styleButton(howToPlayButton);
+        styleButton(exitButton);
+        styleButton(storeButton);
 
         Dimension buttonSize = new Dimension(220,45);
 
+        //اندازه دکمه ها
         newGameButton.setPreferredSize(buttonSize);
         highScoreButton.setPreferredSize(buttonSize);
         settingsButton.setPreferredSize(buttonSize);
         howToPlayButton.setPreferredSize(buttonSize);
         exitButton.setPreferredSize(buttonSize);
+        storeButton.setPreferredSize(buttonSize);
 
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -72,10 +83,26 @@ public class MainMenu extends BackgroundPanel{
         add(settingsButton,gbc);
 
         gbc.gridy++;
+        add(storeButton, gbc);
+
+        gbc.gridy++;
         add(howToPlayButton,gbc);
 
         gbc.gridy++;
         add(exitButton,gbc);
+    }
+
+    private void styleButton(JButton button) {
+
+        button.setFont(new Font("Arial", Font.BOLD, 15));
+        button.setForeground(new Color(255, 200, 0));
+        button.setBackground(new Color(30, 30, 35));
+        button.setFocusPainted(false);
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+
+        button.setBorder(BorderFactory.createLineBorder(new Color(255, 200, 0), 2));
+
     }
 
 
@@ -99,8 +126,6 @@ public class MainMenu extends BackgroundPanel{
         highScoreButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
-                JOptionPane.showMessageDialog(MainMenu.this, "High Scores Panel");
                 frame.showHighScorePanel();
             }
         });
@@ -134,8 +159,6 @@ public class MainMenu extends BackgroundPanel{
         howToPlayButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
-                JOptionPane.showMessageDialog(MainMenu.this, "How To Play Panel");
                 frame.showHowToPlayPanel();
             }
         });
@@ -144,9 +167,41 @@ public class MainMenu extends BackgroundPanel{
         exitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                frame.getDb().close();
                 System.exit(0);
             }
         });
+
+        //store
+        storeButton.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                if (frame.getCurrentUser() == null) {
+
+                    messageLabel.setText("Please login first!");
+
+                    // پاک‌شدن پیام بعد از سه ثانیه
+                    Timer timer = new Timer(3000, new ActionListener() {
+
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            messageLabel.setText(" ");
+                        }
+                    });
+
+                    timer.setRepeats(false);
+                    timer.start();
+                    return;
+
+                }
+
+                frame.showStorePanel();
+
+            }
+        });
+
     }
 
 
