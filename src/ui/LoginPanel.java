@@ -61,8 +61,7 @@ public class LoginPanel extends BackgroundPanel{
         backButton.setPreferredSize(buttonSize);
 
         //چاپ پیام
-        messageLabel = new JLabel();
-        messageLabel.setVisible(false); // اول دیده نشود
+        messageLabel = new JLabel(" ");
         messageLabel.setFont(new Font("Arial", Font.BOLD, 14));
         messageLabel.setHorizontalAlignment(SwingConstants.CENTER);
 

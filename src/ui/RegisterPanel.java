@@ -72,8 +72,7 @@ public class RegisterPanel extends BackgroundPanel{
         loginButton.setPreferredSize(buttonSize);
         backButton.setPreferredSize(buttonSize);
 
-        messageLabel = new JLabel();
-        messageLabel.setVisible(false);
+        messageLabel = new JLabel(" ");
         messageLabel.setFont(new Font("Arial", Font.BOLD, 14));
         messageLabel.setHorizontalAlignment(SwingConstants.CENTER);
 

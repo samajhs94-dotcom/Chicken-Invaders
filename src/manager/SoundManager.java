@@ -36,14 +36,10 @@ public class SoundManager {
 
     private Clip loadSound(String path) {
 
-        try {
-
-            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File(path));
+        try (AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File(path))) {
 
             Clip clip = AudioSystem.getClip();
             clip.open(audioInputStream);
-            audioInputStream.close();
-
             return clip;
 
         } catch (Exception e) {

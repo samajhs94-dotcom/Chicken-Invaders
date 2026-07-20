@@ -39,7 +39,7 @@ public abstract class Boss {
     public abstract void move(int screenWidth);
 
     // تولید گلوله‌ها در ان جهت مساوی
-    public java.util.List<BossBullet> tryAttack() {
+    public List<BossBullet> tryAttack() {
 
         long now = System.currentTimeMillis();
         List<BossBullet> newBullets = new ArrayList<>();

@@ -14,7 +14,7 @@ public class ShooterEnemy extends Enemy {
         return currentTime - lastShotTime >= 3000;
     }
 
-    //گلوله ساخته شه زمان اخرین ثبت میشه
+    //گلوله ساخته شه زمان اخرین شلیک ثبت میشه
     public void recordShot(long currentTime) {
         lastShotTime = currentTime;
     }

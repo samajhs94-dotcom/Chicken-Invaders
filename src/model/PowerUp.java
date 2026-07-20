@@ -37,13 +37,17 @@ public class PowerUp {
     }
 
     private void loadImage() {
-        try {
-            image = new ImageIcon(getImagePath()).getImage();
-        }
-        catch (Exception e) {
-            System.out.println("PowerUp image not loaded: " + getImagePath());
+
+        String path = getImagePath();
+        ImageIcon icon = new ImageIcon(path);
+
+        if (icon.getIconWidth() == -1) {
+            System.out.println("PowerUp image not loaded: " + path);
             image = null;
+
         }
+        else image = icon.getImage();
+
     }
 
     private String getImagePath() {

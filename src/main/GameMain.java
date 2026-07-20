@@ -136,7 +136,7 @@ public class GameMain extends JFrame {
 
     public void showGamePanel() {
         cardLayout.show(mainPanel, "GAME");
-        gamePanel.setCurrentUser(currentUser);
+        gamePanel.prepareNewGameForUser(currentUser);
         soundManager.playBackgroundMusic();
         gamePanel.startGame();
     }

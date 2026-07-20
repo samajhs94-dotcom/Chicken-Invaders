@@ -71,6 +71,7 @@ public class ZigzagEnemy extends Enemy{
 
         eggZigzagFrames--;
 
+        //محض اطمینان دوباره
         if (eggZigzagFrames <= 0) {
             eggOffsetX = 0;
             eggOffsetY = 0;

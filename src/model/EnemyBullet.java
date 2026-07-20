@@ -12,7 +12,6 @@ public class EnemyBullet {
     private int dx;
     private int dy;
 
-    int speed = 5;
     Image image;
 
     public EnemyBullet(int x, int y,int dx,int dy) {

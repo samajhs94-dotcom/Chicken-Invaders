@@ -10,13 +10,14 @@ public class BossBullet {
     private int width;
     private int height;
     private Image image;
+    private double rad;
 
     public BossBullet(double x, double y, double angleDegrees, double speed) {
         this.x = x;
         this.y = y;
         width = 25;
         height = 40;
-        double rad = Math.toRadians(angleDegrees);//تبدیل درجه به رادیان
+        rad = Math.toRadians(angleDegrees);//تبدیل درجه به رادیان
         this.vx = Math.cos(rad) * speed;//سرعت افقی
         this.vy = Math.sin(rad) * speed;//سرعت عمودی
         image = new ImageIcon("src/resources/images/EnemyBullet.png").getImage();
@@ -44,8 +45,7 @@ public class BossBullet {
         double centerX = x + width / 2.0;
         double centerY = y + height / 2.0;
 
-        //عکس تیر به اندازه جت حرکت میچرخه
-        double angle = Math.atan2(vy, vx) - Math.PI / 2;
+        double angle = rad - Math.PI / 2;
 
         g2.rotate(angle, centerX, centerY);
         g2.drawImage(image, (int) x, (int) y, width, height, null);
