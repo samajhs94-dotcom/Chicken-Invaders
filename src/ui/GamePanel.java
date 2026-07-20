@@ -121,7 +121,8 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
-    public void setCurrentUser(User currentUser) {
+    // کاربر فعلی را تنظیم و یک بازی جدید آماده می‌کند.
+    public void prepareNewGameForUser(User currentUser) {
 
         this.currentUser = currentUser;
 
@@ -136,6 +137,7 @@ public class GamePanel extends BackgroundPanel {
         }
     }
 
+    // تمام اطلاعات بازی را برای شروع دوباره ریست می‌کند.
     private void resetGameState() {
 
         score = 0;
@@ -183,6 +185,7 @@ public class GamePanel extends BackgroundPanel {
 
 
 
+    // اطلاعات مرحله قبلی را پاک و مرحله فعلی را آماده می‌کند
     private void startCurrentLevel() {
 
         // پاک کردن اشیای مرحله قبلی
@@ -224,6 +227,7 @@ public class GamePanel extends BackgroundPanel {
         }
     }
 
+    // بازی را متوقف یا دوباره ادامه می‌دهد
     private void togglePause() {
 
         // بعد از پایان بازی امکان توقف و ادامه وجود نداره
@@ -276,6 +280,7 @@ public class GamePanel extends BackgroundPanel {
         repaint();
     }
 
+    // دشمنان مرحله فعلی را در خانه‌های شبکه ایجاد می‌کند
     private void createEnemies() {
 
         enemies.clear();
@@ -297,6 +302,7 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
+    // تایمر بازی را شروع و تمرکز کیبورد را روی پنل قرار می‌دهد
     public void startGame() {
 
         if (gameTimer != null && !gameTimer.isRunning()) {
@@ -305,12 +311,14 @@ public class GamePanel extends BackgroundPanel {
         requestFocusInWindow();
     }
 
+    // تایمر و حلقه اصلی بازی را متوقف می‌کند
     public void stopGame() {
         if (gameTimer != null && gameTimer.isRunning()) {
             gameTimer.stop();
         }
     }
 
+    // تایمر مورد استفاده برای حلقه اصلی بازی را ایجاد می‌کند
     private void initializeTimer() {
 
         gameTimer = new Timer(16, new ActionListener() {
@@ -324,6 +332,7 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
+    // تمام بخش‌های بازی را در یک فریم به‌روزرسانی می‌کند
     private void updateGame() {
 
         if(leftPressed)
@@ -360,6 +369,7 @@ public class GamePanel extends BackgroundPanel {
     }
 
 
+    // دشمنان، حملات و برخوردهای مراحل عادی را به‌روزرسانی می‌کند
     private void updateNormalLevel() {
 
         if(!isFreezeActive()) {
@@ -372,7 +382,7 @@ public class GamePanel extends BackgroundPanel {
             }
 
             handleEggDrop();
-            updateZigzagEggAnimations();
+            updateZigzagAttackAnimations();
 
             handleShooterAttack();
             updateEnemyBullets();
@@ -385,6 +395,7 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
+    // حرکت، حملات و برخوردهای غول را به‌روزرسانی می‌کند
     private void updateBossLevel() {
 
         if (boss == null) return;
@@ -416,6 +427,7 @@ public class GamePanel extends BackgroundPanel {
         checkBulletBossCollision();
     }
 
+    //حرکت تیرهای هواپیما و بررسی خروج از صفحه
     private void updateBullets() {
 
         Iterator<Bullet> iterator = bullets.iterator();
@@ -515,10 +527,20 @@ public class GamePanel extends BackgroundPanel {
         });
     }
 
+
     @Override
     protected void paintComponent(Graphics g) {
 
         super.paintComponent(g);
+
+        drawGameObjects(g);
+        drawGameInformation(g);
+        drawGameStatus(g);
+    }
+
+
+    //رسم اشیای بازی
+    private void drawGameObjects(Graphics g) {
 
         if (plane.shouldRender()) {
             plane.draw(g);
@@ -527,6 +549,7 @@ public class GamePanel extends BackgroundPanel {
         for (Bullet bullet : bullets) {
             bullet.draw(g);
         }
+
         for (Enemy enemy : enemies) {
             enemy.draw(g);
         }
@@ -555,27 +578,40 @@ public class GamePanel extends BackgroundPanel {
             explosion.draw(g);
         }
 
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial",Font.BOLD,18));
-        g.drawString("Lives:",20,30);
+    }
 
-        for(int i=0;i<plane.getLives();i++){
-            g.drawImage(heartImage, 90+i*30, 10, 25, 25, null);
+    //رسم اطلاعات بازی
+    private void drawGameInformation(Graphics g) {
+
+        g.setColor(Color.RED);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.drawString("Lives:", 20, 30);
+
+        for (int i = 0; i < plane.getLives(); i++) {
+            g.drawImage(heartImage, 90 + i * 30, 10, 25, 25, null);
         }
 
-        g.drawString("Score: "+score,20,60);
+        g.setColor(new Color(255, 215, 100));
+        g.drawString("Score: " + score, 20, 60);
 
-        g.drawString("Level: "+levelManager.getLevelNumber(),20,90);
+        g.setColor(new Color(120, 200, 255));
+        g.drawString("Level: " + levelManager.getLevelNumber(), 20, 90);
 
         if (currentUser != null) {
+            g.setColor(new Color(190, 140, 255));
             g.drawString("Player: " + currentUser.getUsername(), 20, 120);
         }
 
-        g.drawString("Fire : " + plane.getBulletCount(),20,150);
+        g.setColor(Color.WHITE);
+        g.drawString("Fire : " + plane.getBulletCount(), 20, 150);
 
         drawPowerUpStatus(g);
+    }
 
-        pausedGame(g);
+    //رسم وضعیت بازی
+    private void drawGameStatus(Graphics g) {
+
+        drawPauseOverlay(g);
 
         if (gameOver) {
             drawOverlay(g, "!! GAME OVER !!", Color.RED);
@@ -591,6 +627,7 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
+    // پیام بازگشت به منوی اصلی را نمایش می‌دهد.
     private void drawEscapeMessage(Graphics g) {
 
         Graphics2D g2 = (Graphics2D) g;
@@ -604,7 +641,8 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
-    private void pausedGame(Graphics g){
+    // صفحه تیره و علامت توقف بازی را رسم می‌کند
+    private void drawPauseOverlay(Graphics g){
         if (paused) {
 
             Graphics2D g2 = (Graphics2D) g;
@@ -625,6 +663,7 @@ public class GamePanel extends BackgroundPanel {
         }
     }
 
+    // یک پیام را در مرکز صفحه نمایش می‌دهد
     private void drawOverlay(Graphics g, String text, Color color) {
 
         Graphics2D g2 = (Graphics2D) g;
@@ -642,7 +681,8 @@ public class GamePanel extends BackgroundPanel {
         g2.drawString(text, x, y);
     }
 
-    private void updateZigzagEggAnimations() {
+    //حرکت زیگزاگی دشمن را پس از تخم‌اندازی به‌روزرسانی می‌کند
+     private void updateZigzagAttackAnimations() {
         for (Enemy enemy : enemies) {
             if (enemy instanceof ZigzagEnemy) {
                 ((ZigzagEnemy) enemy).updateEggZigzag();
@@ -651,6 +691,7 @@ public class GamePanel extends BackgroundPanel {
     }
 
 
+    // در صورت گذشتن زمان لازم، گلوله‌های هواپیما را شلیک می‌کند
     private void shoot() {
 
         long currentTime = System.currentTimeMillis();
@@ -757,6 +798,7 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
+    // بررسی می‌کند که پاورآپ یخ‌زدن فعال است یا نه
     private boolean isFreezeActive() {
         return System.currentTimeMillis() < freezeEndTime;
     }
@@ -773,6 +815,7 @@ public class GamePanel extends BackgroundPanel {
         powerUps.add(new PowerUp(x, y, randomType));
     }
 
+    // زمان باقی‌مانده پاورآپ‌های فعال را نمایش می‌دهد
     private void drawPowerUpStatus(Graphics g) {
 
         long now = System.currentTimeMillis();
@@ -793,6 +836,7 @@ public class GamePanel extends BackgroundPanel {
         }
     }
 
+    // انفجارها را به‌روزرسانی و انفجارهای تمام‌شده را حذف می‌کند.
     private void updateExplosions() {
 
         Iterator<Explosion> it = explosions.iterator();
@@ -808,6 +852,7 @@ public class GamePanel extends BackgroundPanel {
         }
     }
 
+    // یک انفجار ایجاد و صدای آن را پخش می‌کند
     private void addExplosion(int x, int y) {
         explosions.add(new Explosion(x, y));
         soundManager.playExplosion();
@@ -911,6 +956,7 @@ public class GamePanel extends BackgroundPanel {
         }
     }
 
+    // امتیاز مربوط به نوع دشمن را برمی‌گرداند
     private int getEnemyScore(Enemy enemy) {
 
         if (enemy instanceof NormalEnemy)
@@ -953,7 +999,7 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
-    //تولید گلوله دشمن
+    // تولید گلوله دشمن شوتر
     private void handleShooterAttack() {
 
         long now = System.currentTimeMillis();
@@ -1039,7 +1085,7 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
-    //کم شدن جون
+    //کم شدن جون و اسیب ناپذیری موقت ان
     private void handlePlayerHit() {
 
         if (plane.hasShield())
@@ -1077,6 +1123,7 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
+    // بازی را پس از شکست متوقف و نتیجه را ذخیره می‌کند
     private void gameOver() {
 
         if (gameOver || victory) {
@@ -1091,6 +1138,7 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
+    // بازی را پس از پیروزی متوقف و نتیجه را ذخیره می‌کند
     private void winGame() {
         if (gameOver || victory) {
             return;
@@ -1103,6 +1151,7 @@ public class GamePanel extends BackgroundPanel {
         repaint();
     }
 
+    // نتیجه فعلی بازی را در پایگاه داده ذخیره می‌کند.
     private void saveCurrentGameToDatabase() {
 
         if (currentUser == null || dbManager == null) {
@@ -1144,6 +1193,7 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
+    // بررسی می‌کند که آیا دشمنی به پایین صفحه رسیده است یا نه
     private boolean anyEnemyReachedBottom() {
 
         if (enemies.isEmpty()) {
@@ -1159,6 +1209,7 @@ public class GamePanel extends BackgroundPanel {
 
     }
 
+    // شبکه دشمنان و دشمنان جایگزین را حرکت می‌دهد
     private void moveEnemies() {
 
         if (enemies.isEmpty() || currentLevel.isBossLevel() || grid == null)
@@ -1234,6 +1285,7 @@ public class GamePanel extends BackgroundPanel {
     }
 
 
+    // بررسی می‌کند که آیا در یک ستون هنوز دشمن فعالی وجود دارد یا نه
     private boolean isColumnActive(int col) {
 
         for (int r = 0; r < grid.length; r++) {
@@ -1253,6 +1305,7 @@ public class GamePanel extends BackgroundPanel {
     }
 
 
+    // خانه مربوط به دشمن داده‌شده را در شبکه پیدا می‌کند
     private Cell findCell(Enemy enemy) {
 
         for (int r = 0; r < grid.length; r++) {
@@ -1267,7 +1320,7 @@ public class GamePanel extends BackgroundPanel {
         return null;
     }
 
-    // بررسی پایان مرحله برای هر دو حالت (شبکه‌ای و غول)
+    // تمام‌شدن مرحله را بررسی و مرحله بعد را شروع می‌کند.
     private void checkLevelCompletion() {
 
         boolean finished;

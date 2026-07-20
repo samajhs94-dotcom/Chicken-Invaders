@@ -233,12 +233,13 @@ public class Plane {
         }
     }
 
+    //این متد مشخص میکنه هواپیما تو فریم فعلی رسم بشه یا نه
     public boolean shouldRender() {
 
         if (!invincible) return true;
 
         // هر 200ms یک بار خاموش/روشن
-        long now = System.currentTimeMillis();
+        long now = System.currentTimeMillis()-invincibleStartTime;
 
         return ((now / 200) % 2) == 0;
     }

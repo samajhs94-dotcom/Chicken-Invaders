@@ -11,7 +11,6 @@ public class Bullet {
     private int width;
     private int height;
     private int speed;
-    private int damage;
 
     private Image image;
 
@@ -22,7 +21,6 @@ public class Bullet {
         width=32;
         height=35;
         speed=10;
-        damage=1;
         image= new ImageIcon("src/resources/images/bullet.png").getImage();
 
     }
@@ -34,10 +32,6 @@ public class Bullet {
 
     public int getY() {
         return y;
-    }
-
-    public int getDamage() {
-        return damage;
     }
 
     //رسم گلوله

@@ -108,9 +108,6 @@ public class DatabaseManager {
         rs.close();
         ps.close();
 
-        user.setHighScore(0);
-        user.setLastLevel(1);
-        user.setSelectedPlane(1);
     }
 
     public User login(String username, String password) throws SQLException {

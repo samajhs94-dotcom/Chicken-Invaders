@@ -27,12 +27,16 @@ public class Explosion {
     }
 
     private void loadImage() {
-        try {
-            image = new ImageIcon("src/resources/images/explosion.png").getImage();
-        } catch (Exception e) {
-            System.out.println("Explosion image not loaded.");
+
+        String path = "src/resources/images/explosion.png";
+        ImageIcon icon = new ImageIcon(path);
+
+        if (icon.getIconWidth() == -1) {
+            System.out.println("Explosion image not loaded: " + path);
             image = null;
         }
+        else image = icon.getImage();
+        
     }
 
     public void update() {
