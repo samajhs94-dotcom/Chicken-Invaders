@@ -86,7 +86,7 @@ public class StorePanel extends BackgroundPanel{
         planesPanel.add(createPlaneCard(
                 "SNIPER", "src/resources/images/SniperPlane.png",
                 "Speed: 5", "Fire Rate: 150 ms",
-                "Boss Damage: x2", "10000 POINTS", sniperButton));
+                "Lives: 3 | Boss Damage: x2", "10000 POINTS", sniperButton));
 
         backButton = new JButton("BACK");
         styleButton(backButton);
