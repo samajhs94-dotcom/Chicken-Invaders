@@ -14,9 +14,6 @@ public class Cell {
 
     private EnemyType type;
 
-    private int baseX;
-    private int baseY;
-
     // تعداد دفعاتی که این خانه هنوز باید دوباره پر شود
     private int counter;
 
@@ -25,8 +22,6 @@ public class Cell {
         this.col = col;
         this.x = x;
         this.y = y;
-        this.baseX=x;
-        this.baseY=y;
         this.type = type;
         this.counter = counter;
     }
@@ -54,35 +49,21 @@ public class Cell {
         return counter > 0;
     }
 
-    // آیا این خانه کاملاً تمام شده است؟
-    public boolean isFinished() {
-        return enemy == null && counter == 0;
-    }
 
     // گترها
     public int getRow() {
         return row;
     }
-    public int getColumn() {
-        return col;
-    }
     public Enemy getEnemy() {
         return enemy;
     }
-    public int getCounter() {
-        return counter;
-    }
     public int getX() { return x; }
     public int getY() { return y; }
-    public EnemyType getType() { return type; }
 
 
     // سترها
     public void setEnemy(Enemy enemy) {
         this.enemy = enemy;
-    }
-    public void setCounter(int counter) {
-        this.counter = counter;
     }
 
     public Enemy createEnemy(Level level) {
@@ -124,8 +105,8 @@ public class Cell {
 
         enemy.setY(-enemy.getHeight());
 
-        int targetX = (int) Math.round(baseX + offsetX);
-        int targetY = baseY + offsetY;
+        int targetX = (int) Math.round(x + offsetX);
+        int targetY = y + offsetY;
 
         enemy.setTarget(targetX, targetY);
 
@@ -134,7 +115,7 @@ public class Cell {
         return enemy;
     }
 
-    public int getBaseX() { return baseX; }
-    public int getBaseY() { return baseY; }
+    public int getBaseX() { return x; }
+    public int getBaseY() { return y; }
 
 }
